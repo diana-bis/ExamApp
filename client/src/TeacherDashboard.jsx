@@ -1,0 +1,63 @@
+import React, { useState, useEffect } from 'react';
+import { getAllExams } from './api/examService';
+
+const TeacherDashboard = () => {
+  // State to hold list of exams - starts as empty array because we haven't loaded yet from the API
+  const [exams, setExams] = useState([]);
+  // State to track loading status - starts as true because data has not loaded yet
+  const [loading, setLoading] = useState(true);
+
+  // Runs when component first loads
+  useEffect(() => {
+    getAllExams()
+      // If request succeeds
+      .then(data => {
+        // Save exams into state
+        setExams(data);
+        // Stop loading
+        setLoading(false);
+      })
+      // If request fails, log error and stop loading
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  return (
+    <div className="container mt-4">
+      <div className="card shadow">
+        <div className="card-header bg-primary text-white">
+          <h3>Teacher Dashboard</h3>
+        </div>
+        <div className="card-body">
+          <h5 className="card-title">Available Exams</h5>
+          {/* Conditional rendering */}
+          {loading ? (
+            // Show loading message while data is loading
+            <p>Loading exams...</p>
+          ) : (
+            // Show exams after loading finishes
+            <div className="row">
+              {exams.map(exam => (
+                <div key={exam.id} className="col-md-6 mb-3">
+                  <div className="card h-100">
+                    <div className="card-body">
+                      <h6 className="card-subtitle mb-2 text-muted">ID: {exam.id}</h6>
+                      <h5 className="card-title">{exam.title}</h5>
+                      <p className="card-text">Questions: {exam.questions.length}</p>
+                      <button className="btn btn-outline-info btn-sm">View Details</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <button className="btn btn-success mt-3">Create New Exam</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TeacherDashboard;
