@@ -8,6 +8,20 @@ const TeacherDashboard = () => {
   const [loading, setLoading] = useState(true);
   // State to track which exam is being viewed in detail
   const [selectedExam, setSelectedExam] = useState(null);
+  // State for search text input by user
+  const [searchText, setSearchText] = useState('');
+
+  // Filter exams based on search text
+  const filteredExams = exams.filter(exam => {
+    const search = searchText.toLowerCase();
+    const title = exam.title || '';
+    const id = exam.id || '';
+
+    return (
+      title.toLowerCase().includes(search) ||
+      id.toLowerCase().includes(search)
+    );
+  });
 
   // Runs when component first loads
   useEffect(() => {
@@ -80,14 +94,23 @@ const TeacherDashboard = () => {
         </div>
         <div className="card-body">
           <h5 className="card-title">Available Exams</h5>
+          <input
+            type="text"
+            className="form-control mb-3"
+            placeholder="Search by exam title or ID"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
           {/* Conditional rendering */}
           {loading ? (
             // Show loading message while data is loading
             <p>Loading exams...</p>
+          ) : filteredExams.length === 0 ? (
+            <p>No exams found</p>
           ) : (
             // Show exams after loading finishes
             <div className="row">
-              {exams.map(exam => (
+              {filteredExams.map(exam => (
                 <div key={exam.id} className="col-md-6 mb-3">
                   <div className="card h-100">
                     <div className="card-body">
