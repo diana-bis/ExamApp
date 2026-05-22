@@ -25,6 +25,7 @@ const ServiceTestPage = () => {
     const [authResult, setAuthResult] = useState(null);
     const [examResult, setExamResult] = useState(null);
     const [usersResult, setUsersResult] = useState(null);
+    const [logHistory, setLogHistory] = useState([]);
 
     const refreshSession = () => setSessionUser(authService.getCurrentUser());
 
@@ -141,20 +142,53 @@ const ServiceTestPage = () => {
 
                     {/* Logger */}
                     <div>
-                        <p className="fw-semibold text-uppercase small text-muted mb-2">Logger (check console)</p>
-                        <div className="d-flex flex-wrap gap-2">
+                        <p className="fw-semibold text-uppercase small text-muted mb-2">Logger</p>
+                        <p className="text-muted small mb-2">
+                            Central logging wrapper — adds timestamps and keeps an in-memory history (last 50 entries).
+                            All services and components call <code>loggerService</code> instead of <code>console</code> directly,
+                            so output format and destination can be changed in one place.
+                        </p>
+                        <div className="d-flex flex-wrap gap-2 mb-2">
                             <button
                                 className="btn btn-outline-secondary btn-sm"
                                 onClick={() => {
                                     loggerService.log('ServiceTest › log — working');
                                     loggerService.warn('ServiceTest › warn — working');
                                     loggerService.error('ServiceTest › error — working');
-                                    notifyService.notifyInfo('Logger fired — open DevTools console.');
+                                    setLogHistory(loggerService.getHistory());
                                 }}
                             >
                                 Fire log / warn / error
                             </button>
+                            <button
+                                className="btn btn-outline-primary btn-sm"
+                                onClick={() => setLogHistory(loggerService.getHistory())}
+                            >
+                                View History
+                            </button>
+                            <button
+                                className="btn btn-outline-danger btn-sm"
+                                onClick={() => { loggerService.clearHistory(); setLogHistory([]); }}
+                            >
+                                Clear History
+                            </button>
                         </div>
+                        {logHistory.length > 0 && (
+                            <div className="border rounded p-2" style={{ maxHeight: 200, overflowY: 'auto' }}>
+                                {logHistory.map((entry, i) => (
+                                    <div key={i} className="small font-monospace d-flex gap-2">
+                                        <span className="text-muted">{entry.time}</span>
+                                        <span className={
+                                            entry.level === 'ERROR' ? 'text-danger' :
+                                            entry.level === 'WARN'  ? 'text-warning' : 'text-secondary'
+                                        }>
+                                            [{entry.level}]
+                                        </span>
+                                        <span>{entry.message}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Exam service */}
