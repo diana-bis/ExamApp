@@ -102,6 +102,11 @@ class MockDatabase {
     );
   }
 
+  addUser(user) {
+    this.data.users.push(user);
+    return user;
+  }
+
   // --- Exam helpers ---
 
   findExam(id) {

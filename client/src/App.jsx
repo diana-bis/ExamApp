@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
 import TeacherDashboard from './components/TeacherDashboard';
 import StudentPortal from './components/StudentPortal';
 import TakeExam from './components/TakeExam';
@@ -44,6 +45,10 @@ function App() {
             <Route
               path="/login"
               element={user ? <Navigate to={defaultRoute} replace /> : <LoginPage onLogin={handleLogin} />}
+            />
+            <Route
+              path="/register"
+              element={user ? <Navigate to={defaultRoute} replace /> : <RegisterPage />}
             />
             <Route
               path="/teacher"

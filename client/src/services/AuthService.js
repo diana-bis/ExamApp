@@ -27,6 +27,25 @@ class AuthService {
         return Promise.resolve(user);
     }
 
+    register({ name, username, password, role }) {
+        if (mockDb.findUser(username)) {
+            const error = new Error('Username is already taken');
+            error.field = 'username';
+            return Promise.reject(error);
+        }
+
+        const newUser = {
+            id: `U${Date.now()}`,
+            username: username.trim(),
+            password,
+            role,
+            name: name.trim(),
+        };
+
+        mockDb.addUser(newUser);
+        return Promise.resolve(newUser);
+    }
+
     logout() {
         storageService.removeItem(USER_KEY);
         return Promise.resolve();

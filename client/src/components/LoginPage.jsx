@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { authService } from '../services/AuthService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
@@ -121,7 +122,8 @@ const LoginPage = ({ onLogin }) => {
                     </form>
                 </div>
                 <div className="card-footer text-center text-muted small py-2">
-                    <strong>teacher</strong> / password &nbsp;|&nbsp; <strong>student</strong> / password
+                    <div><strong>teacher</strong> / password &nbsp;|&nbsp; <strong>student</strong> / password</div>
+                    <div className="mt-1">No account? <Link to="/register">Register here</Link></div>
                 </div>
             </div>
         </div>
