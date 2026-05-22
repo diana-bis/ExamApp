@@ -122,6 +122,13 @@ class MockDatabase {
     this.data.exams = this.data.exams.filter(e => e.id !== id);
   }
 
+  updateExam(id, updated) {
+    const index = this.data.exams.findIndex(e => e.id === id);
+    if (index === -1) return null;
+    this.data.exams[index] = { ...this.data.exams[index], ...updated };
+    return this.data.exams[index];
+  }
+
   // --- Submission helpers ---
 
   addSubmission(submission) {

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { examService } from '../api/ExamService';
 import { mockDb } from '../api/mockDb';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
 const TeacherDashboard = () => {
+  const navigate = useNavigate();
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedExam, setSelectedExam] = useState(null);
@@ -173,28 +175,16 @@ const TeacherDashboard = () => {
                         <span>Pass: <strong>{exam.passingGrade}%</strong></span>
                       </div>
                       <div className="d-flex flex-wrap gap-2">
-                        <button
-                          className="btn btn-outline-info btn-sm"
-                          onClick={() => setSelectedExam(exam)}
-                        >
+                        <button className="btn btn-outline-info btn-sm" onClick={() => setSelectedExam(exam)}>
                           View Details
                         </button>
-                        <button
-                          className="btn btn-outline-secondary btn-sm"
-                          onClick={() => setScoresExam(exam)}
-                        >
+                        <button className="btn btn-outline-secondary btn-sm" onClick={() => setScoresExam(exam)}>
                           View Scores
                         </button>
-                        <button
-                          className="btn btn-outline-warning btn-sm"
-                          onClick={() => notifyService.notifyInfo('Edit exam — coming soon.')}
-                        >
+                        <button className="btn btn-outline-warning btn-sm" onClick={() => navigate(`/exam/edit/${exam.id}`)}>
                           Edit
                         </button>
-                        <button
-                          className="btn btn-outline-danger btn-sm"
-                          onClick={() => handleDelete(exam)}
-                        >
+                        <button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(exam)}>
                           Delete
                         </button>
                       </div>

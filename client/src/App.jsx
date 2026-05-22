@@ -6,6 +6,7 @@ import RegisterPage from './components/RegisterPage';
 import TeacherDashboard from './components/TeacherDashboard';
 import StudentPortal from './components/StudentPortal';
 import TakeExam from './components/TakeExam';
+import EditExamPage from './components/EditExamPage';
 import ServiceTestPage from './components/ServiceTestPage';
 import { authService } from './services/AuthService';
 import { notifyService } from './services/NotifyService';
@@ -72,6 +73,14 @@ function App() {
               element={
                 <ProtectedRoute user={user} requiredRole="student">
                   <TakeExam />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/exam/edit/:examId"
+              element={
+                <ProtectedRoute user={user} requiredRole="teacher">
+                  <EditExamPage />
                 </ProtectedRoute>
               }
             />
