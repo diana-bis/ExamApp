@@ -1,38 +1,30 @@
+import BaseApiService from './BaseApiService';
 import { mockDb } from './mockDb';
 
-// Function that returns all exams - simulates a backend API request
-export const getAllExams = () => {
-  // Simulate network delay with setTimeout
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([...mockDb.exams]);
-    }, 800);
-  });
-};
+export class ExamService extends BaseApiService {
+  async getAllExams() {
+    await this.simulateDelay(800);
+    return [...mockDb.exams];
+  }
 
-// Function to fetch one exam by its ID
-export const getExamById = (id) => {
-  // Simulate network delay and potential error handling
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const exam = mockDb.exams.find(e => e.id === id);
-      if (exam) {
-        resolve({ ...exam });
-      } else {
-        reject(new Error("Exam not found"));
-      }
-    }, 500);
-  });
-};
+  async getExamById(id) {
+    await this.simulateDelay(500);
+    const exam = mockDb.exams.find(e => e.id === id);
+    if (exam) {
+      return { ...exam };
+    }
+    throw new Error('Exam not found');
+  }
 
-// Function to create a new exam 
-export const createExam = (exam) => {
-  // Simulated backend processing delay
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newExam = { ...exam, id: `EX${Math.floor(Math.random() * 1000)}` };
-      mockDb.exams.push(newExam);
-      resolve(newExam);
-    }, 1000);
-  });
-};
+  async createExam(exam) {
+    await this.simulateDelay(1000);
+    const newExam = {
+      ...exam,
+      id: `EX${Math.floor(Math.random() * 900) + 100}`,
+    };
+    mockDb.exams.push(newExam);
+    return newExam;
+  }
+}
+
+export const examService = new ExamService();
