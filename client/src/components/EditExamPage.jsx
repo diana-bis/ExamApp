@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { mockDb } from '../api/mockDb';
+import { examService } from '../api/ExamService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
@@ -8,11 +8,19 @@ const EditExamPage = () => {
     const { examId } = useParams();
     const navigate = useNavigate();
 
-    const [form, setForm] = useState(() => {
-        const found = mockDb.findExam(examId);
-        if (!found) return null;
-        return JSON.parse(JSON.stringify(found));
-    });
+    const [form, setForm] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        examService.getExamById(examId)
+            .then(exam => setForm(JSON.parse(JSON.stringify(exam))))
+            .catch(() => setForm(null))
+            .finally(() => setLoading(false));
+    }, [examId]);
+
+    if (loading) {
+        return <div className="container mt-4"><p className="text-muted">Loading...</p></div>;
+    }
 
     if (!form) {
         return (
@@ -69,7 +77,7 @@ const EditExamPage = () => {
 
     // ── Save ───────────────────────────────────────────────────────────────────
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!form.title.trim()) {
             notifyService.notifyError('Title is required.');
             return;
@@ -97,7 +105,7 @@ const EditExamPage = () => {
             }
         }
 
-        mockDb.updateExam(form.id, form);
+        await examService.updateExam(form.id, form);
         notifyService.notifySuccess(`"${form.title}" saved.`);
         loggerService.log('EditExamPage › updated exam:', form.id);
         navigate('/teacher');

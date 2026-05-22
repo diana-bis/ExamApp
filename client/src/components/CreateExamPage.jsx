@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockDb } from '../api/mockDb';
+import { examService } from '../api/ExamService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
@@ -61,7 +61,7 @@ const CreateExamPage = () => {
 
     // ── Validation & save ──────────────────────────────────────────────────────
 
-    const handleCreate = () => {
+    const handleCreate = async () => {
         if (!form.title.trim()) {
             notifyService.notifyError('Title is required.');
             return;
@@ -89,8 +89,7 @@ const CreateExamPage = () => {
             }
         }
 
-        const newExam = { id: `EX${Date.now()}`, ...form };
-        mockDb.addExam(newExam);
+        const newExam = await examService.createExam(form);
         notifyService.notifySuccess(`"${form.title}" created.`);
         loggerService.log('CreateExamPage › created exam:', newExam.id);
         navigate('/teacher');

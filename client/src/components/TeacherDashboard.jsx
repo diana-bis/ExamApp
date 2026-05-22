@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { examService } from '../api/ExamService';
-import { mockDb } from '../api/mockDb';
+import { submissionService } from '../api/SubmissionService';
+import { authService } from '../services/AuthService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
@@ -11,6 +12,7 @@ const TeacherDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [selectedExam, setSelectedExam] = useState(null);
   const [scoresExam, setScoresExam] = useState(null);
+  const [scoresData, setScoresData] = useState({ submissions: [], users: [] });
   const [searchText, setSearchText] = useState('');
 
   const filteredExams = exams.filter(exam => {
@@ -24,17 +26,26 @@ const TeacherDashboard = () => {
       .catch(err => { loggerService.error('TeacherDashboard › getAllExams():', err); setLoading(false); });
   }, []);
 
-  const handleDelete = (exam) => {
+  const handleDelete = async (exam) => {
     if (!window.confirm(`Delete "${exam.title}"? This cannot be undone.`)) return;
-    mockDb.deleteExam(exam.id);
+    await examService.deleteExam(exam.id);
     setExams(prev => prev.filter(e => e.id !== exam.id));
     notifyService.notifySuccess(`"${exam.title}" deleted.`);
     loggerService.log('TeacherDashboard › deleted exam:', exam.id);
   };
 
+  useEffect(() => {
+    if (!scoresExam) return;
+    Promise.all([
+      submissionService.getSubmissionsByExam(scoresExam.id),
+      authService.getUsers(),
+    ]).then(([submissions, users]) => setScoresData({ submissions, users }))
+      .catch(err => loggerService.error('TeacherDashboard › scores load failed:', err));
+  }, [scoresExam]);
+
   // ── Scores view ────────────────────────────────────────────────────────────
   if (scoresExam) {
-    const submissions = mockDb.getSubmissions().filter(s => s.examId === scoresExam.id);
+    const { submissions, users } = scoresData;
 
     return (
       <div className="container mt-4">
@@ -60,7 +71,7 @@ const TeacherDashboard = () => {
                 </thead>
                 <tbody>
                   {submissions.map(sub => {
-                    const student = mockDb.data.users.find(u => u.id === sub.studentId);
+                    const student = users.find(u => u.id === sub.studentId);
                     const passed = (sub.grade ?? 0) >= scoresExam.passingGrade;
                     return (
                       <tr key={sub.id}>
