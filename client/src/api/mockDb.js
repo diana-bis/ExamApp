@@ -1,27 +1,132 @@
-// Mock database for exams and student scores
-export const mockDb = {
+class MockDatabase {
+  static _instance = null;
 
-  // Array of all exams in the system
-  exams: [
-    {
-      id: "EX001",
-      title: "JavaScript Basics",
-      questions: [
-        { id: 1, question: "What is closure?", options: ["A", "B", "C", "D"], answer: "A" },
-        { id: 2, question: "What is hoisting?", options: ["A", "B", "C", "D"], answer: "B" }
-      ]
-    },
-    {
-      id: "EX002",
-      title: "React Fundamentals",
-      questions: [
-        { id: 1, question: "What is a hook?", options: ["A", "B", "C", "D"], answer: "C" }
-      ]
+  constructor() {
+    if (MockDatabase._instance) {
+      return MockDatabase._instance;
     }
-  ],
-  // Array of student scores for exams
-  studentScores: [
-    { studentName: "Alice", examId: "EX001", score: 85 },
-    { studentName: "Bob", examId: "EX001", score: 70 }
-  ]
-};
+
+    this.data = {
+      users: [
+        {
+          id: 'U001',
+          username: 'teacher',
+          password: 'password',
+          role: 'teacher',
+          name: 'Bob',
+        },
+        {
+          id: 'U002',
+          username: 'student',
+          password: 'password',
+          role: 'student',
+          name: 'John',
+        },
+      ],
+
+      exams: [
+        {
+          id: 'EX001',
+          title: 'JavaScript Basics',
+          timeLimit: 60,
+          passingGrade: 60,
+          questions: [
+            {
+              id: 'q1',
+              type: 'MULTIPLE_CHOICE',
+              text: 'What is typeof null?',
+              options: ['object', 'null', 'undefined', 'number'],
+              correctAnswer: 'object',
+            },
+            {
+              id: 'q2',
+              type: 'MULTIPLE_CHOICE',
+              text: 'Which keyword declares a block-scoped variable?',
+              options: ['var', 'let', 'function', 'class'],
+              correctAnswer: 'let',
+            },
+            {
+              id: 'q3',
+              type: 'OPEN_ENDED',
+              text: 'Explain what a closure is in JavaScript.',
+            },
+          ],
+        },
+        {
+          id: 'EX002',
+          title: 'React Fundamentals',
+          timeLimit: 45,
+          passingGrade: 70,
+          questions: [
+            {
+              id: 'q1',
+              type: 'MULTIPLE_CHOICE',
+              text: 'Which hook manages local state in a React component?',
+              options: ['useEffect', 'useRef', 'useState', 'useContext'],
+              correctAnswer: 'useState',
+            },
+            {
+              id: 'q2',
+              type: 'MULTIPLE_CHOICE',
+              text: 'What does useEffect with an empty dependency array do?',
+              options: [
+                'Runs on every render',
+                'Runs once on mount',
+                'Runs on unmount only',
+                'Never runs',
+              ],
+              correctAnswer: 'Runs once on mount',
+            },
+            {
+              id: 'q3',
+              type: 'OPEN_ENDED',
+              text: 'Describe the virtual DOM and explain why React uses it.',
+            },
+          ],
+        },
+      ],
+
+      submissions: [],
+    };
+
+    MockDatabase._instance = this;
+  }
+
+  // --- User helpers ---
+
+  findUser(username) {
+    return (
+      this.data.users.find(
+        u => u.username.toLowerCase() === username.toLowerCase()
+      ) ?? null
+    );
+  }
+
+  // --- Exam helpers ---
+
+  findExam(id) {
+    return this.data.exams.find(e => e.id === id) ?? null;
+  }
+
+  addExam(exam) {
+    this.data.exams.push(exam);
+    return exam;
+  }
+
+  // --- Submission helpers ---
+
+  addSubmission(submission) {
+    this.data.submissions.push(submission);
+    return submission;
+  }
+
+  getSubmissions() {
+    return [...this.data.submissions];
+  }
+
+  getSubmissionById(id) {
+    return this.data.submissions.find(s => s.id === id) ?? null;
+  }
+}
+
+export const mockDb = new MockDatabase();
