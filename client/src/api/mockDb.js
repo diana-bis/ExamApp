@@ -28,6 +28,7 @@ class MockDatabase {
         {
           id: 'EX001',
           title: 'JavaScript Basics',
+          status: 'published',
           timeLimit: 60,
           passingGrade: 60,
           questions: [
@@ -50,6 +51,7 @@ class MockDatabase {
         {
           id: 'EX002',
           title: 'React Fundamentals',
+          status: 'published',
           timeLimit: 45,
           passingGrade: 70,
           questions: [

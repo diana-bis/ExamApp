@@ -31,7 +31,7 @@ export class ExamService extends BaseApiService {
                 .map(e => parseInt(e.id.replace('EX', ''), 10))
                 .filter(n => !isNaN(n))
                 .reduce((max, n) => Math.max(max, n), 0);
-            const newExam = { id: `EX${String(maxNum + 1).padStart(3, '0')}`, ...exam };
+            const newExam = { id: `EX${String(maxNum + 1).padStart(3, '0')}`, status: 'draft', ...exam };
             mockDb.addExam(newExam);
             return newExam;
         }

@@ -23,6 +23,10 @@ const StudentPortal = () => {
 
     try {
       const data = await examService.getExamById(id);
+      if (data.status && data.status !== 'published') {
+        notifyService.notifyError('This exam is not yet available.');
+        return;
+      }
       loggerService.log(`Exam found — title: "${data.title}", questions: ${data.questions.length}`);
       notifyService.notifySuccess(`Exam "${data.title}" loaded successfully.`);
       setExam(data);

@@ -65,7 +65,7 @@ MILESTONE 3 — Lecturer (Teacher) Features
   [DONE]    Grade exams — MC questions auto-graded;
              Open Ended answers reviewed and graded via inline
              grading panel in the scores view
-  [PENDING] Publish / unpublish exams (draft vs live status)
+  [DONE]    Publish / unpublish exams (draft vs live status)
   [PENDING] Written feedback per student submission
   [PENDING] Publish results to students after manual review
 
@@ -176,6 +176,9 @@ Exam
 ----
   id            : string     e.g. "EX001"
   title         : string
+  status        : string     "draft" | "published"
+                             New exams default to "draft".
+                             Students can only access published exams.
   timeLimit     : number     minutes
   passingGrade  : number     percentage (0–100)
   questions     : Question[]

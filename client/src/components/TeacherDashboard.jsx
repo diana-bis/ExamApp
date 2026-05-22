@@ -22,6 +22,14 @@ const TeacherDashboard = () => {
       .catch(err => { loggerService.error('TeacherDashboard › getAllExams():', err); setLoading(false); });
   }, []);
 
+  const handleToggleStatus = async (exam) => {
+    const newStatus = exam.status === 'published' ? 'draft' : 'published';
+    await examService.updateExam(exam.id, { status: newStatus });
+    setExams(prev => prev.map(e => e.id === exam.id ? { ...e, status: newStatus } : e));
+    notifyService.notifySuccess(`"${exam.title}" is now ${newStatus}.`);
+    loggerService.log('TeacherDashboard › status changed:', exam.id, '→', newStatus);
+  };
+
   const handleDelete = async (exam) => {
     if (!window.confirm(`Delete "${exam.title}"? This cannot be undone.`)) return;
     await examService.deleteExam(exam.id);
@@ -111,7 +119,12 @@ const TeacherDashboard = () => {
                 <div key={exam.id} className="col-md-6">
                   <div className="card h-100">
                     <div className="card-body">
-                      <p className="text-muted small mb-1">ID: {exam.id}</p>
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <p className="text-muted small mb-0">ID: {exam.id}</p>
+                        <span className={`badge ${exam.status === 'published' ? 'bg-success' : 'bg-secondary'}`}>
+                          {exam.status === 'published' ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
                       <h6 className="fw-semibold mb-2">{exam.title}</h6>
                       <div className="d-flex gap-3 text-muted small mb-3">
                         <span>Questions: <strong>{(exam.questions || []).length}</strong></span>
@@ -119,6 +132,12 @@ const TeacherDashboard = () => {
                         <span>Pass: <strong>{exam.passingGrade}%</strong></span>
                       </div>
                       <div className="d-flex flex-wrap gap-2">
+                        <button
+                          className={`btn btn-sm ${exam.status === 'published' ? 'btn-success' : 'btn-outline-success'}`}
+                          onClick={() => handleToggleStatus(exam)}
+                        >
+                          {exam.status === 'published' ? 'Unpublish' : 'Publish'}
+                        </button>
                         <button className="btn btn-outline-info btn-sm" onClick={() => setSelectedExam(exam)}>
                           View Details
                         </button>
