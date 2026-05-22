@@ -153,7 +153,7 @@ const EditExamPage = () => {
                             <button className="btn btn-outline-primary btn-sm" onClick={() => addQuestion('MULTIPLE_CHOICE')}>
                                 + Multiple Choice
                             </button>
-                            <button className="btn btn-outline-secondary btn-sm" onClick={() => addQuestion('OPEN_ENDED')}>
+                            <button className="btn btn-outline-primary btn-sm btn-sm" onClick={() => addQuestion('OPEN_ENDED')}>
                                 + Open Ended
                             </button>
                         </div>
