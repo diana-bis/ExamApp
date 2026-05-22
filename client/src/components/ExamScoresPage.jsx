@@ -16,6 +16,7 @@ const ExamScoresPage = () => {
     const [loading, setLoading] = useState(true);
     const [gradingSubId, setGradingSubId] = useState(null);
     const [gradeInput, setGradeInput] = useState('');
+    const [feedbackInput, setFeedbackInput] = useState('');
 
     useEffect(() => {
         Promise.all([
@@ -38,9 +39,10 @@ const ExamScoresPage = () => {
             notifyService.notifyError('Grade must be between 0 and 100.');
             return;
         }
-        await submissionService.updateSubmission(sub.id, { grade });
-        setSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, grade } : s));
-        notifyService.notifySuccess('Grade saved.');
+        const feedback = feedbackInput.trim();
+        await submissionService.updateSubmission(sub.id, { grade, feedback });
+        setSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, grade, feedback } : s));
+        notifyService.notifySuccess('Grade and feedback saved.');
         loggerService.log('ExamScoresPage › graded submission:', sub.id, 'grade:', grade);
         setGradingSubId(null);
     };
@@ -91,6 +93,7 @@ const ExamScoresPage = () => {
                                     <th>Grade</th>
                                     <th>Result</th>
                                     <th>Submitted</th>
+                                    <th>Feedback</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -112,6 +115,11 @@ const ExamScoresPage = () => {
                                                 <td className="text-muted small">
                                                     {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
                                                 </td>
+                                                <td className="small">
+                                                    {sub.feedback
+                                                        ? <span className="text-success">Given</span>
+                                                        : <span className="text-muted fst-italic">None</span>}
+                                                </td>
                                                 <td>
                                                     <button
                                                         className={`btn btn-sm ${isGrading ? 'btn-secondary' : 'btn-outline-primary'}`}
@@ -121,6 +129,7 @@ const ExamScoresPage = () => {
                                                             } else {
                                                                 setGradingSubId(sub.id);
                                                                 setGradeInput(String(sub.grade ?? ''));
+                                                                setFeedbackInput(sub.feedback ?? '');
                                                             }
                                                         }}
                                                     >
@@ -130,7 +139,7 @@ const ExamScoresPage = () => {
                                             </tr>
                                             {isGrading && (
                                                 <tr className="table-warning">
-                                                    <td colSpan={5}>
+                                                    <td colSpan={6}>
                                                         <div className="p-2">
                                                             {hasOpenEnded ? (
                                                                 <h6 className="fw-semibold mb-3">Open-Ended Answers</h6>
@@ -152,6 +161,16 @@ const ExamScoresPage = () => {
                                                                     </div>
                                                                 </div>
                                                             ))}
+                                                            <div className="mb-3">
+                                                                <label className="fw-semibold small mb-1">Written Feedback (visible to student):</label>
+                                                                <textarea
+                                                                    className="form-control form-control-sm"
+                                                                    rows={3}
+                                                                    placeholder="Leave feedback for the student..."
+                                                                    value={feedbackInput}
+                                                                    onChange={e => setFeedbackInput(e.target.value)}
+                                                                />
+                                                            </div>
                                                             <div className="d-flex align-items-center gap-3 mt-2">
                                                                 <label className="fw-semibold small mb-0">Final Grade (0–100):</label>
                                                                 <input

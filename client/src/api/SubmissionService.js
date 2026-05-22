@@ -52,6 +52,15 @@ class SubmissionService extends BaseApiService {
         return res.json();
     }
 
+    async getSubmissionsByStudent(studentId) {
+        await this.simulateDelay(600);
+        if (configService.isMockMode()) {
+            return mockDb.getSubmissions().filter(s => s.studentId === studentId);
+        }
+        const res = await fetch(`${configService.getApiBaseUrl()}/submissions?studentId=${studentId}`);
+        return res.json();
+    }
+
     async updateSubmission(id, data) {
         await this.simulateDelay(400);
         if (configService.isMockMode()) {

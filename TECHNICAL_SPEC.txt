@@ -66,7 +66,7 @@ MILESTONE 3 — Lecturer (Teacher) Features
              Open Ended answers reviewed and graded via inline
              grading panel in the scores view
   [DONE]    Publish / unpublish exams (draft vs live status)
-  [PENDING] Written feedback per student submission
+  [DONE]    Written feedback per student submission
   [PENDING] Publish results to students after manual review
 
 ----------------------------------------------------------------
@@ -79,8 +79,8 @@ MILESTONE 4 — Student Features
   [DONE]    Submit answers manually before time runs out
   [DONE]    Immediate results screen after submission
              (score, pass/fail, per-question breakdown)
-  [PENDING] View past submissions and grades from portal
-  [PENDING] Receive teacher feedback on open-ended answers
+  [DONE]    View past submissions and grades from portal
+  [DONE]    Receive teacher feedback on open-ended answers
 
 ----------------------------------------------------------------
 MILESTONE 5 — Backend API
@@ -202,7 +202,8 @@ Submission
   studentId   : string   references User.id
   examId      : string   references Exam.id
   answers     : object   { [questionId]: string }
-  grade       : number   percentage (0–100), MC only
+  grade       : number   percentage (0–100), auto or teacher-overridden
+  feedback    : string   teacher's written feedback (optional)
   submittedAt : string   ISO 8601 timestamp (set server-side)
 
 
