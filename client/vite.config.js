@@ -6,5 +6,9 @@ const isGitHubPages = process.env.DEPLOY_TARGET === 'gh-pages'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: isGitHubPages ? '/ExamApp/' : '/'
+  base: isGitHubPages ? '/ExamApp/' : '/',
+  test: {
+    environment: 'jsdom',
+    setupFiles: './src/setupTests.js'
+  }
 })
