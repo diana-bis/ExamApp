@@ -1,25 +1,30 @@
-class SubmissionService {
-    async submitExam(submission) {
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        return {
-            success: true,
-            submissionId: `SUB${Date.now()}`,
-            submittedAt: new Date().toISOString(),
-            ...submission,
-        };
-    }
+import BaseApiService from './BaseApiService';
+import { mockDb } from './mockDb';
 
-    async getSubmissions() {
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        // TODO: Implement submission history using a mock database or real backend
-        return [];
-    }
+class SubmissionService extends BaseApiService {
+  async submitExam(submission) {
+    await this.simulateDelay(800);
+    const record = {
+      id: `SUB${Date.now()}`,
+      studentId: submission.studentId,
+      examId: submission.examId,
+      answers: submission.answers,
+      grade: submission.grade,
+      submittedAt: new Date().toISOString(),
+    };
+    mockDb.addSubmission(record);
+    return record;
+  }
 
-    async getSubmissionById(id) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        // TODO: Return a real submission record when backend storage is available
-        return null;
-    }
+  async getSubmissions() {
+    await this.simulateDelay(600);
+    return mockDb.getSubmissions();
+  }
+
+  async getSubmissionById(id) {
+    await this.simulateDelay(500);
+    return mockDb.getSubmissionById(id);
+  }
 }
 
 export const submissionService = new SubmissionService();

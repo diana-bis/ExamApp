@@ -4,15 +4,13 @@ import { mockDb } from './mockDb';
 export class ExamService extends BaseApiService {
   async getAllExams() {
     await this.simulateDelay(800);
-    return [...mockDb.exams];
+    return mockDb.data.exams.map(e => ({ ...e }));
   }
 
   async getExamById(id) {
     await this.simulateDelay(500);
-    const exam = mockDb.exams.find(e => e.id === id);
-    if (exam) {
-      return { ...exam };
-    }
+    const exam = mockDb.findExam(id);
+    if (exam) return { ...exam };
     throw new Error('Exam not found');
   }
 
@@ -22,7 +20,7 @@ export class ExamService extends BaseApiService {
       ...exam,
       id: `EX${Math.floor(Math.random() * 900) + 100}`,
     };
-    mockDb.exams.push(newExam);
+    mockDb.addExam(newExam);
     return newExam;
   }
 }
