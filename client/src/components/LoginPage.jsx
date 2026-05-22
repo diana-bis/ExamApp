@@ -73,7 +73,7 @@ const LoginPage = ({ onLogin }) => {
                     </form>
                 </div>
                 <div className="card-footer text-center text-muted small py-2">
-                    Username <strong>teacher</strong> → Teacher view &nbsp;|&nbsp; any other → Student view
+                    <strong>teacher</strong> / password &nbsp;|&nbsp; <strong>student</strong> / password
                 </div>
             </div>
         </div>

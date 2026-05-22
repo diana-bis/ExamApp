@@ -6,8 +6,7 @@ const Navbar = ({ user, onLogout }) => {
             <div className="container-fluid">
                 <span className="navbar-brand mb-0 h1 text-primary">E-Test System</span>
                 <div className="d-flex align-items-center gap-2">
-                    <span className="badge bg-secondary text-capitalize">{user.role}</span>
-                    <span className="small fw-semibold">{user.username}</span>
+                    <span className="small fw-semibold">{user.name}</span>
                     <button className="btn btn-sm btn-outline-danger" onClick={onLogout}>
                         Logout
                     </button>
