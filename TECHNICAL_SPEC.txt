@@ -1,0 +1,396 @@
+================================================================
+  E-TEST SYSTEM — TECHNICAL SPECIFICATION
+================================================================
+
+PROJECT OVERVIEW
+----------------
+A React-based exam management system with a mock in-memory backend.
+The architecture is layered so that swapping to a real backend
+requires only a single config flag change (isMockMode).
+
+Original requirement: Design and implement a Full Stack web application
+for managing online exams and student submissions, supporting lecturers
+and students with authentication, persistent storage, and cloud deployment.
+
+
+================================================================
+PROJECT MILESTONES
+================================================================
+
+Legend:  [DONE]     Fully implemented
+         [PARTIAL]  Started but incomplete
+         [PENDING]  Not yet implemented
+
+----------------------------------------------------------------
+MILESTONE 1 — Frontend Application
+----------------------------------------------------------------
+
+  [DONE]    React 18 + Vite project setup
+  [DONE]    React Router v6 with HashRouter (static hosting ready)
+  [DONE]    Bootstrap 5 UI — responsive, consistent design
+  [DONE]    Protected routes with role-based access (teacher/student)
+  [DONE]    Navbar with logged-in user display and logout
+  [DONE]    Toast notification system (success / error / info)
+  [DONE]    Centralised logger with timestamp and in-memory history
+  [DONE]    Dev/debug panel at /#/test-services
+
+----------------------------------------------------------------
+MILESTONE 2 — Authentication & Authorisation
+----------------------------------------------------------------
+
+  [DONE]    Login page with field-specific inline errors
+  [DONE]    Registration page with validation and role selection
+  [DONE]    Session persistence via localStorage
+  [DONE]    Role-based routing (teacher vs student dashboards)
+  [DONE]    ProtectedRoute component — redirect if unauthenticated
+             or wrong role
+  [PENDING] Real authentication (JWT / token validation)
+  [PENDING] Password hashing (bcrypt or equivalent)
+  [PENDING] Token refresh / session expiry
+
+----------------------------------------------------------------
+MILESTONE 3 — Lecturer (Teacher) Features
+----------------------------------------------------------------
+
+  [DONE]    Teacher dashboard — view and search all exams
+  [DONE]    Create exam (title, time limit, passing grade,
+             questions) via dedicated CreateExamPage
+  [DONE]    Edit exam — full question editor via EditExamPage
+  [DONE]    Delete exam with confirmation
+  [DONE]    Question types: Multiple Choice and Open Ended
+  [DONE]    Add / remove / reorder options on MC questions
+  [DONE]    Correct answer selection per MC question
+  [DONE]    View student submissions per exam (scores table
+             with student name, grade, pass/fail, timestamp)
+  [PARTIAL] Grade exams — MC questions auto-graded;
+             Open Ended answers stored but no manual grading UI
+  [PENDING] Publish / unpublish exams (draft vs live status)
+  [PENDING] Written feedback per student submission
+  [PENDING] Publish results to students after manual review
+
+----------------------------------------------------------------
+MILESTONE 4 — Student Features
+----------------------------------------------------------------
+
+  [DONE]    Student portal — list of available exams
+  [DONE]    Start exam and answer questions
+  [DONE]    Countdown timer with auto-submit on expiry
+  [DONE]    Submit answers manually before time runs out
+  [DONE]    Immediate results screen after submission
+             (score, pass/fail, per-question breakdown)
+  [PENDING] View past submissions and grades from portal
+  [PENDING] Receive teacher feedback on open-ended answers
+
+----------------------------------------------------------------
+MILESTONE 5 — Backend API
+----------------------------------------------------------------
+
+  [DONE]    API layer abstraction (ExamService, SubmissionService,
+             AuthService) with mock/real branches wired
+  [DONE]    All fetch() calls stubbed and ready —
+             activate by setting isMockMode() to false
+  [PENDING] Real backend server (Node.js / Express or equivalent)
+  [PENDING] REST endpoints:
+              POST   /api/auth/login
+              POST   /api/auth/register
+              GET    /api/exams
+              GET    /api/exams/:id
+              POST   /api/exams
+              PUT    /api/exams/:id
+              DELETE /api/exams/:id
+              GET    /api/submissions
+              GET    /api/submissions?examId=:id
+              POST   /api/submissions
+              GET    /api/users
+
+----------------------------------------------------------------
+MILESTONE 6 — Database Integration
+----------------------------------------------------------------
+
+  [DONE]    MockDatabase singleton — in-memory store with full
+             CRUD for users, exams, and submissions
+  [PENDING] Real database (PostgreSQL / MongoDB / equivalent)
+  [PENDING] ORM / query layer (Prisma, Mongoose, etc.)
+  [PENDING] Database migrations and seed scripts
+  [PENDING] Persistent storage of registered users and exams
+             (currently lost on page refresh in mock mode)
+
+----------------------------------------------------------------
+MILESTONE 7 — Deployment
+----------------------------------------------------------------
+
+  [DONE]    HashRouter routing — compatible with static hosts
+             (GitHub Pages, Netlify, Vercel)
+  [DONE]    Vite production build configured
+  [PENDING] Frontend deployed to cloud (GitHub Pages / Vercel)
+  [PENDING] Backend deployed to cloud (Railway / Render / AWS)
+  [PENDING] Database hosted (Supabase / Atlas / RDS)
+  [PENDING] Environment variables for API URL and secrets
+  [PENDING] CI/CD pipeline
+
+----------------------------------------------------------------
+SUMMARY
+----------------------------------------------------------------
+
+  Done:     Full frontend, mock backend, teacher CRUD, student
+            exam flow with timer, auth with role protection,
+            service/API layer ready for real backend.
+
+  Remaining: Real backend + database, manual grading UI,
+             publish/unpublish workflow, student grade history,
+             teacher feedback, and cloud deployment.
+
+
+================================================================
+ARCHITECTURE LAYERS
+================================================================
+
+  [ React Components ]
+        |
+  [ Service Layer ]          AuthService, NotifyService,
+        |                    LoggerService, StorageService,
+        |                    ConfigService
+  [ API Layer ]              ExamService, SubmissionService
+        |                    (extend BaseApiService)
+        |
+  [ MockDatabase ]           In-memory singleton (mockDb.js)
+        |
+  [ localStorage ]           Session persistence via StorageService
+
+
+================================================================
+DATA MODELS
+================================================================
+
+User
+----
+  id          : string   e.g. "U001"
+  username    : string   unique, case-insensitive lookup
+  password    : string   plaintext (mock only)
+  name        : string   display name
+  role        : string   "teacher" | "student"
+
+Exam
+----
+  id            : string     e.g. "EX001"
+  title         : string
+  timeLimit     : number     minutes
+  passingGrade  : number     percentage (0–100)
+  questions     : Question[]
+
+Question
+--------
+  id            : string
+  type          : "MULTIPLE_CHOICE" | "OPEN_ENDED"
+  text          : string
+
+  MULTIPLE_CHOICE only:
+    options       : string[]   answer choices
+    correctAnswer : string     must match one of options
+
+  OPEN_ENDED only:
+    (no extra fields — pending manual review)
+
+Submission
+----------
+  id          : string   e.g. "SUB1716384721234"
+  studentId   : string   references User.id
+  examId      : string   references Exam.id
+  answers     : object   { [questionId]: string }
+  grade       : number   percentage (0–100), MC only
+  submittedAt : string   ISO 8601 timestamp (set server-side)
+
+
+================================================================
+GRADING LOGIC
+================================================================
+
+  - Only MULTIPLE_CHOICE questions are auto-graded.
+  - OPEN_ENDED answers are stored but not scored (pending review).
+
+  grade = (mcCorrect / mcTotal) * 100   rounded to nearest integer
+
+  Pass condition: grade >= exam.passingGrade
+
+  If mcTotal == 0 (all open-ended), grade defaults to 0.
+
+
+================================================================
+SERVICE LAYER
+================================================================
+
+ConfigService
+  getAppName()        → "E-Test System"
+  getApiBaseUrl()     → "/api"
+  getDefaultRole()    → "teacher"
+  isMockMode()        → true | false
+                         Controls mock vs real API globally.
+
+AuthService
+  login(username, password)             → Promise<User>
+  register({ name, username,
+             password, role })          → Promise<User>
+  logout()                              → Promise<void>
+  getCurrentUser()                      → User | null  (sync)
+  getUsers()                            → Promise<User[]>
+
+  Session stored in localStorage via StorageService.
+  Field-specific errors: error.field = "username" | "password"
+
+NotifyService
+  notifySuccess(message)
+  notifyError(message)
+  notifyInfo(message)
+
+  Bootstrap alert toasts, bottom-right, auto-dismiss 3.5s.
+
+LoggerService
+  log(...args)
+  warn(...args)
+  error(...args)
+  getHistory()    → last 50 entries [ { level, time, message } ]
+  clearHistory()
+
+  Prepends [LOG/WARN/ERROR HH:MM:SS] to every console call.
+
+StorageService
+  saveItem(key, value)    serialises to JSON
+  getItem(key)            deserialises from JSON
+  removeItem(key)
+
+  Used only by AuthService for "current_user" key.
+
+
+================================================================
+API LAYER
+================================================================
+
+BaseApiService
+  simulateDelay(ms)   skipped when isMockMode() is false
+  handleError(error)
+
+ExamService  (extends BaseApiService)
+  getAllExams()              → Promise<Exam[]>
+  getExamById(id)           → Promise<Exam>
+  createExam(data)          → Promise<Exam>
+  updateExam(id, data)      → Promise<Exam>
+  deleteExam(id)            → Promise<void>
+
+SubmissionService  (extends BaseApiService)
+  submitExam(submission)            → Promise<Submission>
+  getSubmissions()                  → Promise<Submission[]>
+  getSubmissionsByExam(examId)      → Promise<Submission[]>
+  getSubmissionById(id)             → Promise<Submission>
+
+Real API endpoints (active when isMockMode() = false):
+  GET    /api/exams
+  GET    /api/exams/:id
+  POST   /api/exams
+  PUT    /api/exams/:id
+  DELETE /api/exams/:id
+  GET    /api/submissions
+  GET    /api/submissions?examId=:id
+  GET    /api/submissions/:id
+  POST   /api/submissions
+  POST   /api/auth/login
+  POST   /api/auth/register
+  GET    /api/users
+
+
+================================================================
+MOCK DATABASE
+================================================================
+
+Singleton class (MockDatabase) — one shared instance across all
+services. State lives in this.data:
+
+  this.data.users       : User[]
+  this.data.exams       : Exam[]
+  this.data.submissions : Submission[]
+
+Seed data:
+  Users:  teacher / password (Bob), student / password (John)
+  Exams:  "JavaScript Basics" (EX001), "React Fundamentals" (EX002)
+
+Methods:
+  findUser(username)       case-insensitive
+  addUser(user)
+  findExam(id)
+  addExam(exam)
+  updateExam(id, updates)
+  deleteExam(id)
+  addSubmission(submission)
+  getSubmissions()
+  getSubmissionById(id)
+
+
+================================================================
+ROUTING  (HashRouter — GitHub Pages compatible)
+================================================================
+
+  /login                  public
+  /register               public
+  /teacher                protected — role: teacher
+  /exam/new               protected — role: teacher
+  /exam/edit/:examId      protected — role: teacher
+  /student                protected — role: student
+  /exam/:examId           protected — role: student
+  /test-services          public (dev/debug panel)
+
+  ProtectedRoute redirects unauthenticated users to /login.
+  Role mismatch redirects to the user's own dashboard.
+
+
+================================================================
+SESSION MANAGEMENT
+================================================================
+
+  - Login stores a User object in localStorage under "current_user".
+  - App.jsx initialises user state from authService.getCurrentUser()
+    on load, so sessions survive page refresh.
+  - Logout removes the key and resets React state.
+  - Registered users are added to mockDb only (lost on page refresh).
+
+
+================================================================
+EXAM TIMER
+================================================================
+
+  - Timer starts when exam data finishes loading in TakeExam.jsx.
+  - Counts down from exam.timeLimit * 60 seconds.
+  - Badge colour: white → yellow (≤60s) → red (≤30s).
+  - On expiry: auto-submits current answers, skips MC validation.
+  - answersRef (useRef) ensures the auto-submit closure always
+    reads the latest answers state without stale capture.
+
+
+================================================================
+ID GENERATION  (mock mode)
+================================================================
+
+  Users:       "U" + Date.now()
+  Exams:       "EX" + zero-padded sequential number  e.g. EX003
+               (derived from highest existing numeric suffix)
+  Submissions: "SUB" + Date.now()
+  Questions:   "q"  + Date.now()  (within form, client-side only)
+
+
+================================================================
+SWITCHING TO A REAL BACKEND
+================================================================
+
+  1. In ConfigService.js:
+       isMockMode() { return false; }
+       getApiBaseUrl() { return 'https://your-api.com/api'; }
+
+  2. No other changes required. All ExamService, SubmissionService,
+     and AuthService methods have fetch() branches already wired.
+
+  3. The real backend must:
+       - Accept/return the same JSON shapes as the data models above.
+       - Set submittedAt server-side on POST /submissions.
+       - Assign exam IDs server-side on POST /exams.
+       - Return field-specific errors for auth failures
+         so LoginPage and RegisterPage can highlight the right field.
+
+================================================================
