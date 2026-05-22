@@ -1,10 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { examService } from '../api/ExamService';
 import { submissionService } from '../api/SubmissionService';
 import { authService } from '../services/AuthService';
 import { loggerService } from '../services/LoggerService';
 import { notifyService } from '../services/NotifyService';
+
+const formatTime = (secs) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+};
 
 const TakeExam = () => {
     const { examId } = useParams();
@@ -16,6 +22,13 @@ const TakeExam = () => {
     const [answers, setAnswers] = useState({});
     const [submitting, setSubmitting] = useState(false);
     const [result, setResult] = useState(null);
+    const [timeLeft, setTimeLeft] = useState(null);
+
+    const answersRef = useRef({});
+    const intervalRef = useRef(null);
+
+    // Keep ref in sync so the timer's auto-submit always sees the latest answers
+    useEffect(() => { answersRef.current = answers; }, [answers]);
 
     useEffect(() => {
         loggerService.log(`TakeExam: loading exam "${examId}"`);
@@ -31,32 +44,49 @@ const TakeExam = () => {
             .finally(() => setLoading(false));
     }, [examId]);
 
-    const handleSelectMC = (questionId, option) => {
-        setAnswers(prev => ({ ...prev, [questionId]: option }));
-    };
+    // Start countdown once exam data arrives
+    useEffect(() => {
+        if (!exam) return;
+        const seconds = exam.timeLimit * 60;
+        setTimeLeft(seconds);
 
-    const handleOpenEnded = (questionId, text) => {
-        setAnswers(prev => ({ ...prev, [questionId]: text }));
-    };
+        intervalRef.current = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(intervalRef.current);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
 
-    const handleSubmit = async () => {
-        const mcQuestions = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE');
-        const unansweredMC = mcQuestions.filter(q => !answers[q.id]);
-        if (unansweredMC.length > 0) {
-            notifyService.notifyError(`Please answer all multiple choice questions. (${unansweredMC.length} remaining)`);
-            return;
+        return () => clearInterval(intervalRef.current);
+    }, [exam?.id]);
+
+    // Auto-submit when time runs out
+    useEffect(() => {
+        if (timeLeft === 0 && !result && !submitting) {
+            notifyService.notifyError('Time is up! Your answers have been submitted automatically.');
+            loggerService.log('TakeExam: time expired — auto-submitting');
+            doSubmit(answersRef.current);
         }
+    }, [timeLeft]);
 
+    // ── Submission logic ───────────────────────────────────────────────────────
+
+    const doSubmit = async (currentAnswers) => {
+        clearInterval(intervalRef.current);
         setSubmitting(true);
         loggerService.log(`TakeExam: submitting answers for exam "${examId}"`);
 
         try {
+            const mcQuestions = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE');
             const details = exam.questions.map(q => {
                 if (q.type === 'MULTIPLE_CHOICE') {
-                    const correct = answers[q.id] === q.correctAnswer;
-                    return { ...q, selected: answers[q.id], correct };
+                    const correct = currentAnswers[q.id] === q.correctAnswer;
+                    return { ...q, selected: currentAnswers[q.id], correct };
                 }
-                return { ...q, selected: answers[q.id] ?? '', correct: null };
+                return { ...q, selected: currentAnswers[q.id] ?? '', correct: null };
             });
 
             const mcTotal = mcQuestions.length;
@@ -66,7 +96,7 @@ const TakeExam = () => {
             await submissionService.submitExam({
                 studentId: currentUser?.id,
                 examId,
-                answers,
+                answers: currentAnswers,
                 grade,
             });
 
@@ -80,6 +110,23 @@ const TakeExam = () => {
             setSubmitting(false);
         }
     };
+
+    const handleSubmit = () => {
+        const unansweredMC = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE' && !answers[q.id]);
+        if (unansweredMC.length > 0) {
+            notifyService.notifyError(`Please answer all multiple choice questions. (${unansweredMC.length} remaining)`);
+            return;
+        }
+        doSubmit(answers);
+    };
+
+    const handleSelectMC = (questionId, option) =>
+        setAnswers(prev => ({ ...prev, [questionId]: option }));
+
+    const handleOpenEnded = (questionId, text) =>
+        setAnswers(prev => ({ ...prev, [questionId]: text }));
+
+    // ── Views ──────────────────────────────────────────────────────────────────
 
     if (loading) {
         return (
@@ -131,7 +178,6 @@ const TakeExam = () => {
                                 const itemClass = isOpen
                                     ? 'list-group-item list-group-item-secondary'
                                     : `list-group-item ${q.correct ? 'list-group-item-success' : 'list-group-item-danger'}`;
-
                                 return (
                                     <div key={q.id} className={itemClass}>
                                         <div className="d-flex justify-content-between">
@@ -141,7 +187,7 @@ const TakeExam = () => {
                                         </div>
                                         {!isOpen && (
                                             <small>
-                                                Your answer: <strong>{q.selected}</strong>
+                                                Your answer: <strong>{q.selected || '—'}</strong>
                                                 {!q.correct && <> &nbsp;|&nbsp; Correct: <strong>{q.correctAnswer}</strong></>}
                                             </small>
                                         )}
@@ -164,23 +210,33 @@ const TakeExam = () => {
 
     const mcAnswered = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE' && answers[q.id]).length;
     const mcTotal = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE').length;
+    const timerBadge = timeLeft <= 30
+        ? 'bg-danger'
+        : timeLeft <= 60
+            ? 'bg-warning text-dark'
+            : 'bg-light text-dark';
 
     return (
         <div className="container mt-4">
             <div className="card shadow">
                 <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <h3 className="mb-0">{exam.title}</h3>
-                    <span className="badge bg-light text-dark">
-                        {mcAnswered} / {mcTotal} answered
-                    </span>
+                    <h5 className="mb-0">{exam.title}</h5>
+                    <div className="d-flex align-items-center gap-2">
+                        <span className="badge bg-light text-dark">
+                            {mcAnswered} / {mcTotal} answered
+                        </span>
+                        {timeLeft !== null && (
+                            <span className={`badge ${timerBadge}`} style={{ fontSize: '0.95rem', minWidth: 60 }}>
+                                ⏱ {formatTime(timeLeft)}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div className="card-body">
                     {exam.questions.map((q, index) => (
                         <div key={q.id} className="mb-4 p-3 border rounded">
                             <div className="d-flex justify-content-between align-items-start mb-2">
-                                <p className="fw-semibold mb-0">
-                                    {index + 1}. {q.text}
-                                </p>
+                                <p className="fw-semibold mb-0">{index + 1}. {q.text}</p>
                                 <span className={`badge ms-2 ${q.type === 'MULTIPLE_CHOICE' ? 'bg-primary' : 'bg-secondary'}`}>
                                     {q.type === 'MULTIPLE_CHOICE' ? 'Multiple Choice' : 'Open Ended'}
                                 </span>
@@ -213,7 +269,7 @@ const TakeExam = () => {
                                     rows={4}
                                     placeholder="Write your answer here..."
                                     value={answers[q.id] ?? ''}
-                                    onChange={(e) => handleOpenEnded(q.id, e.target.value)}
+                                    onChange={e => handleOpenEnded(q.id, e.target.value)}
                                 />
                             )}
                         </div>
@@ -223,11 +279,7 @@ const TakeExam = () => {
                         <button className="btn btn-outline-secondary" onClick={() => navigate('/student')}>
                             Cancel
                         </button>
-                        <button
-                            className="btn btn-success"
-                            onClick={handleSubmit}
-                            disabled={submitting}
-                        >
+                        <button className="btn btn-success" onClick={handleSubmit} disabled={submitting}>
                             {submitting ? 'Submitting...' : 'Submit Exam'}
                         </button>
                     </div>
