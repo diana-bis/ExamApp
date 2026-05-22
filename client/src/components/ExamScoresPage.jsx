@@ -33,6 +33,14 @@ const ExamScoresPage = () => {
             .finally(() => setLoading(false));
     }, [examId]);
 
+    const handlePublish = async (sub) => {
+        const resultsPublished = !sub.resultsPublished;
+        await submissionService.updateSubmission(sub.id, { resultsPublished });
+        setSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, resultsPublished } : s));
+        notifyService.notifySuccess(resultsPublished ? 'Results published to student.' : 'Results unpublished.');
+        loggerService.log('ExamScoresPage › publish toggle:', sub.id, '→', resultsPublished);
+    };
+
     const handleSaveGrade = async (sub) => {
         const grade = Number(gradeInput);
         if (isNaN(grade) || grade < 0 || grade > 100) {
@@ -111,6 +119,10 @@ const ExamScoresPage = () => {
                                                     <span className={`badge ${passed ? 'bg-success' : 'bg-danger'}`}>
                                                         {passed ? 'Pass' : 'Fail'}
                                                     </span>
+                                                    <br />
+                                                    <small className={sub.resultsPublished ? 'text-success' : 'text-warning'}>
+                                                        {sub.resultsPublished ? '● Published' : '● Pending'}
+                                                    </small>
                                                 </td>
                                                 <td className="text-muted small">
                                                     {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
@@ -121,20 +133,28 @@ const ExamScoresPage = () => {
                                                         : <span className="text-muted fst-italic">None</span>}
                                                 </td>
                                                 <td>
-                                                    <button
-                                                        className={`btn btn-sm ${isGrading ? 'btn-secondary' : 'btn-outline-primary'}`}
-                                                        onClick={() => {
-                                                            if (isGrading) {
-                                                                setGradingSubId(null);
-                                                            } else {
-                                                                setGradingSubId(sub.id);
-                                                                setGradeInput(String(sub.grade ?? ''));
-                                                                setFeedbackInput(sub.feedback ?? '');
-                                                            }
-                                                        }}
-                                                    >
-                                                        {isGrading ? 'Close' : 'Grade'}
-                                                    </button>
+                                                    <div className="d-flex flex-column gap-1">
+                                                        <button
+                                                            className={`btn btn-sm ${isGrading ? 'btn-secondary' : 'btn-outline-primary'}`}
+                                                            onClick={() => {
+                                                                if (isGrading) {
+                                                                    setGradingSubId(null);
+                                                                } else {
+                                                                    setGradingSubId(sub.id);
+                                                                    setGradeInput(String(sub.grade ?? ''));
+                                                                    setFeedbackInput(sub.feedback ?? '');
+                                                                }
+                                                            }}
+                                                        >
+                                                            {isGrading ? 'Close' : 'Grade'}
+                                                        </button>
+                                                        <button
+                                                            className={`btn btn-sm ${sub.resultsPublished ? 'btn-outline-secondary' : 'btn-outline-success'}`}
+                                                            onClick={() => handlePublish(sub)}
+                                                        >
+                                                            {sub.resultsPublished ? 'Unpublish' : 'Publish'}
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             {isGrading && (

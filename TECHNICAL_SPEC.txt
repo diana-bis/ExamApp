@@ -67,7 +67,7 @@ MILESTONE 3 — Lecturer (Teacher) Features
              grading panel in the scores view
   [DONE]    Publish / unpublish exams (draft vs live status)
   [DONE]    Written feedback per student submission
-  [PENDING] Publish results to students after manual review
+  [DONE]    Publish results to students after manual review
 
 ----------------------------------------------------------------
 MILESTONE 4 — Student Features
@@ -202,9 +202,12 @@ Submission
   studentId   : string   references User.id
   examId      : string   references Exam.id
   answers     : object   { [questionId]: string }
-  grade       : number   percentage (0–100), auto or teacher-overridden
-  feedback    : string   teacher's written feedback (optional)
-  submittedAt : string   ISO 8601 timestamp (set server-side)
+  grade            : number   percentage (0–100), auto or teacher-overridden
+  feedback         : string   teacher's written feedback (optional)
+  resultsPublished : boolean  true = student can see grade/feedback;
+                              auto-true for MC-only exams, false for OE exams
+                              until teacher publishes
+  submittedAt      : string   ISO 8601 timestamp (set server-side)
 
 
 ================================================================

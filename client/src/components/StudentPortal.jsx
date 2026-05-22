@@ -129,14 +129,18 @@ const StudentPortal = () => {
                           {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
                         </small>
                       </div>
-                      <div className="text-end">
-                        <div className="fw-bold">{sub.grade ?? '—'}%</div>
-                        <span className={`badge ${passed ? 'bg-success' : 'bg-danger'}`}>
-                          {passed ? 'Pass' : 'Fail'}
-                        </span>
-                      </div>
+                      {sub.resultsPublished ? (
+                        <div className="text-end">
+                          <div className="fw-bold">{sub.grade ?? '—'}%</div>
+                          <span className={`badge ${passed ? 'bg-success' : 'bg-danger'}`}>
+                            {passed ? 'Pass' : 'Fail'}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="badge bg-warning text-dark">Pending review</span>
+                      )}
                     </div>
-                    {sub.feedback && (
+                    {sub.resultsPublished && sub.feedback && (
                       <div className="mt-2 p-2 bg-light rounded border small">
                         <span className="fw-semibold">Teacher feedback: </span>{sub.feedback}
                       </div>

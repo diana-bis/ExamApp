@@ -94,11 +94,13 @@ const TakeExam = () => {
             const mcCorrect = details.filter(d => d.type === 'MULTIPLE_CHOICE' && d.correct).length;
             const grade = mcTotal > 0 ? Math.round((mcCorrect / mcTotal) * 100) : 0;
 
+            const hasOE = exam.questions.some(q => q.type === 'OPEN_ENDED');
             await submissionService.submitExam({
                 studentId: currentUser?.id,
                 examId,
                 answers: currentAnswers,
                 grade,
+                resultsPublished: !hasOE,
             });
 
             loggerService.log(`TakeExam: submission complete — grade ${grade}%`);

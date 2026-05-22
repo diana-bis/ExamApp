@@ -12,6 +12,7 @@ class SubmissionService extends BaseApiService {
                 examId: submission.examId,
                 answers: submission.answers,
                 grade: submission.grade,
+                resultsPublished: submission.resultsPublished ?? true,
                 submittedAt: new Date().toISOString(),
             };
             mockDb.addSubmission(record);
