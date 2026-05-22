@@ -1,5 +1,8 @@
+import { configService } from '../services/ConfigService';
+
 class BaseApiService {
     simulateDelay(duration = 500) {
+        if (!configService.isMockMode()) return Promise.resolve();
         return new Promise((resolve) => setTimeout(resolve, duration));
     }
 
@@ -7,8 +10,6 @@ class BaseApiService {
         console.error('[BaseApiService] Error:', error);
         throw error;
     }
-
-    // TODO: Add shared API helpers for fetch, retry, auth headers, etc.
 }
 
 export default BaseApiService;
