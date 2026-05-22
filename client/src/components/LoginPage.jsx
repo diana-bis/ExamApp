@@ -6,24 +6,39 @@ import { loggerService } from '../services/LoggerService';
 const LoginPage = ({ onLogin }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [invalidField, setInvalidField] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!username.trim() || !password.trim()) {
+        const trimmedUsername = username.trim();
+        const trimmedPassword = password.trim();
+
+        if (!trimmedUsername || !trimmedPassword) {
+            setErrorMessage('Please enter both username and password.');
+            setInvalidField(!trimmedUsername ? 'username' : 'password');
             notifyService.notifyError('Please enter both username and password.');
             return;
         }
+
         setLoading(true);
-        loggerService.log(`Login attempt — username: "${username.trim()}"`);
+        setErrorMessage('');
+        setInvalidField('');
+        loggerService.log(`Login attempt — username: "${trimmedUsername}"`);
         try {
-            const user = await authService.login(username.trim(), password.trim());
+            const user = await authService.login(trimmedUsername, trimmedPassword);
             loggerService.log(`Login success — user: ${user.username}, role: ${user.role}`);
-            notifyService.notifySuccess(`Welcome, ${user.username}!`);
+            notifyService.notifySuccess(`Welcome, ${user.name || user.username}!`);
             onLogin(user);
         } catch (err) {
-            loggerService.error('Login failed:', err.message);
-            notifyService.notifyError('Login failed. Please try again.');
+            const message = err.message || 'Login failed. Please try again.';
+            const field = err.field || '';
+            setErrorMessage(message);
+            setInvalidField(field);
+            loggerService.error('Login failed:', message);
+            notifyService.notifyError(message);
         } finally {
             setLoading(false);
         }
@@ -43,25 +58,53 @@ const LoginPage = ({ onLogin }) => {
                             <input
                                 id="username"
                                 type="text"
-                                className="form-control"
+                                className={`form-control ${invalidField === 'username' ? 'is-invalid' : ''}`}
                                 placeholder="Enter username"
                                 value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                onChange={(e) => {
+                                    setUsername(e.target.value);
+                                    if (invalidField === 'username') {
+                                        setInvalidField('');
+                                        setErrorMessage('');
+                                    }
+                                }}
                                 autoComplete="username"
                                 autoFocus
                             />
+                            {invalidField === 'username' && (
+                                <div className="invalid-feedback">{errorMessage}</div>
+                            )}
                         </div>
                         <div className="mb-4">
                             <label htmlFor="password" className="form-label fw-semibold">Password</label>
-                            <input
-                                id="password"
-                                type="password"
-                                className="form-control"
-                                placeholder="Enter password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                autoComplete="current-password"
-                            />
+                            <div className="input-group">
+                                <input
+                                    id="password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    className={`form-control ${invalidField === 'password' ? 'is-invalid' : ''}`}
+                                    placeholder="Enter password"
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        if (invalidField === 'password') {
+                                            setInvalidField('');
+                                            setErrorMessage('');
+                                        }
+                                    }}
+                                    autoComplete="current-password"
+                                />
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary"
+                                    onClick={() => setShowPassword((value) => !value)}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? '🙈' : '👁️'}
+                                </button>
+                            </div>
+                            {invalidField === 'password' && (
+                                <div className="invalid-feedback d-block">{errorMessage}</div>
+                            )}
                         </div>
                         <button
                             type="submit"
@@ -70,6 +113,11 @@ const LoginPage = ({ onLogin }) => {
                         >
                             {loading ? 'Signing in...' : 'Sign In'}
                         </button>
+                        {!invalidField && errorMessage && (
+                            <div className="alert alert-danger mt-3" role="alert">
+                                {errorMessage}
+                            </div>
+                        )}
                     </form>
                 </div>
                 <div className="card-footer text-center text-muted small py-2">
