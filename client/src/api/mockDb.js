@@ -118,6 +118,10 @@ class MockDatabase {
     return exam;
   }
 
+  deleteExam(id) {
+    this.data.exams = this.data.exams.filter(e => e.id !== id);
+  }
+
   // --- Submission helpers ---
 
   addSubmission(submission) {

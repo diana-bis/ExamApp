@@ -1,42 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { examService } from '../api/ExamService';
+import { mockDb } from '../api/mockDb';
+import { notifyService } from '../services/NotifyService';
+import { loggerService } from '../services/LoggerService';
 
 const TeacherDashboard = () => {
-  // State to hold list of exams - starts as empty array because we haven't loaded yet from the API
   const [exams, setExams] = useState([]);
-  // State to track loading status - starts as true because data has not loaded yet
   const [loading, setLoading] = useState(true);
-  // State to track which exam is being viewed in detail
   const [selectedExam, setSelectedExam] = useState(null);
-  // State for search text input by user
+  const [scoresExam, setScoresExam] = useState(null);
   const [searchText, setSearchText] = useState('');
 
-  // Filter exams based on search text
   const filteredExams = exams.filter(exam => {
-    const search = searchText.toLowerCase();
-    const title = exam.title || '';
-    const id = exam.id || '';
-
-    return (
-      title.toLowerCase().includes(search) ||
-      id.toLowerCase().includes(search)
-    );
+    const s = searchText.toLowerCase();
+    return (exam.title || '').toLowerCase().includes(s) || (exam.id || '').toLowerCase().includes(s);
   });
 
-  // Runs when component first loads
   useEffect(() => {
     examService.getAllExams()
-      .then(data => {
-        setExams(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .then(data => { setExams(data); setLoading(false); })
+      .catch(err => { loggerService.error('TeacherDashboard › getAllExams():', err); setLoading(false); });
   }, []);
 
-  // If an exam is selected, show its details
+  const handleDelete = (exam) => {
+    if (!window.confirm(`Delete "${exam.title}"? This cannot be undone.`)) return;
+    mockDb.deleteExam(exam.id);
+    setExams(prev => prev.filter(e => e.id !== exam.id));
+    notifyService.notifySuccess(`"${exam.title}" deleted.`);
+    loggerService.log('TeacherDashboard › deleted exam:', exam.id);
+  };
+
+  // ── Scores view ────────────────────────────────────────────────────────────
+  if (scoresExam) {
+    const submissions = mockDb.getSubmissions().filter(s => s.examId === scoresExam.id);
+
+    return (
+      <div className="container mt-4">
+        <div className="card shadow">
+          <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">Scores — {scoresExam.title}</h5>
+            <button className="btn btn-light btn-sm" onClick={() => setScoresExam(null)}>
+              Back to Dashboard
+            </button>
+          </div>
+          <div className="card-body">
+            {submissions.length === 0 ? (
+              <p className="text-muted">No submissions for this exam yet.</p>
+            ) : (
+              <table className="table table-bordered table-sm">
+                <thead className="table-light">
+                  <tr>
+                    <th>Student</th>
+                    <th>Grade</th>
+                    <th>Result</th>
+                    <th>Submitted</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions.map(sub => {
+                    const student = mockDb.data.users.find(u => u.id === sub.studentId);
+                    const passed = (sub.grade ?? 0) >= scoresExam.passingGrade;
+                    return (
+                      <tr key={sub.id}>
+                        <td>{student ? `${student.name} (@${student.username})` : sub.studentId}</td>
+                        <td><strong>{sub.grade ?? '—'}%</strong></td>
+                        <td>
+                          <span className={`badge ${passed ? 'bg-success' : 'bg-danger'}`}>
+                            {passed ? 'Pass' : 'Fail'}
+                          </span>
+                        </td>
+                        <td className="text-muted small">
+                          {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Detail view ────────────────────────────────────────────────────────────
   if (selectedExam) {
     const questions = selectedExam.questions || [];
 
@@ -44,11 +92,8 @@ const TeacherDashboard = () => {
       <div className="container mt-4">
         <div className="card shadow">
           <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h3>Exam Details: {selectedExam.title}</h3>
-            <button
-              className="btn btn-light btn-sm"
-              onClick={() => setSelectedExam(null)}
-            >
+            <h5 className="mb-0">Exam Details — {selectedExam.title}</h5>
+            <button className="btn btn-light btn-sm" onClick={() => setSelectedExam(null)}>
               Back to Dashboard
             </button>
           </div>
@@ -68,17 +113,15 @@ const TeacherDashboard = () => {
                       {q.type === 'MULTIPLE_CHOICE' ? 'Multiple Choice' : 'Open Ended'}
                     </span>
                   </div>
-
                   {q.type === 'MULTIPLE_CHOICE' && q.options && (
                     <ul className="mb-1 mt-1">
-                      {q.options.map((option, optionIndex) => (
-                        <li key={optionIndex} className={option === q.correctAnswer ? 'fw-semibold text-success' : ''}>
+                      {q.options.map((option, i) => (
+                        <li key={i} className={option === q.correctAnswer ? 'fw-semibold text-success' : ''}>
                           {option}{option === q.correctAnswer ? ' ✓' : ''}
                         </li>
                       ))}
                     </ul>
                   )}
-
                   {q.type === 'OPEN_ENDED' && (
                     <p className="mb-0 text-muted small">Manual grading required</p>
                   )}
@@ -91,50 +134,76 @@ const TeacherDashboard = () => {
     );
   }
 
+  // ── Main dashboard ─────────────────────────────────────────────────────────
   return (
     <div className="container mt-4">
       <div className="card shadow">
         <div className="card-header bg-primary text-white">
-          <h3>Teacher Dashboard</h3>
+          <h5 className="mb-0">Teacher Dashboard</h5>
         </div>
         <div className="card-body">
-          <h5 className="card-title">Available Exams</h5>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="mb-0">Exams</h5>
+            <button className="btn btn-success btn-sm">+ Create New Exam</button>
+          </div>
+
           <input
             type="text"
             className="form-control mb-3"
-            placeholder="Search by exam title or ID"
+            placeholder="Search by title or ID"
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={e => setSearchText(e.target.value)}
           />
-          {/* Conditional rendering */}
+
           {loading ? (
-            // Show loading message while data is loading
-            <p>Loading exams...</p>
+            <p className="text-muted">Loading exams...</p>
           ) : filteredExams.length === 0 ? (
-            <p>No exams found</p>
+            <p className="text-muted">No exams found.</p>
           ) : (
-            // Show exams after loading finishes
-            <div className="row">
+            <div className="row g-3">
               {filteredExams.map(exam => (
-                <div key={exam.id} className="col-md-6 mb-3">
+                <div key={exam.id} className="col-md-6">
                   <div className="card h-100">
                     <div className="card-body">
-                      <h6 className="card-subtitle mb-2 text-muted">ID: {exam.id}</h6>
-                      <h5 className="card-title">{exam.title}</h5>
-                      <p className="card-text mb-1">Questions: {(exam.questions || []).length}</p>
-                      <button
-                        className="btn btn-outline-info btn-sm"
-                        onClick={() => setSelectedExam(exam)}
-                      >
-                        View Details
-                      </button>
+                      <p className="text-muted small mb-1">ID: {exam.id}</p>
+                      <h6 className="fw-semibold mb-2">{exam.title}</h6>
+                      <div className="d-flex gap-3 text-muted small mb-3">
+                        <span>Questions: <strong>{(exam.questions || []).length}</strong></span>
+                        <span>Time: <strong>{exam.timeLimit} min</strong></span>
+                        <span>Pass: <strong>{exam.passingGrade}%</strong></span>
+                      </div>
+                      <div className="d-flex flex-wrap gap-2">
+                        <button
+                          className="btn btn-outline-info btn-sm"
+                          onClick={() => setSelectedExam(exam)}
+                        >
+                          View Details
+                        </button>
+                        <button
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={() => setScoresExam(exam)}
+                        >
+                          View Scores
+                        </button>
+                        <button
+                          className="btn btn-outline-warning btn-sm"
+                          onClick={() => notifyService.notifyInfo('Edit exam — coming soon.')}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => handleDelete(exam)}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
-          <button className="btn btn-success mt-3">Create New Exam</button>
         </div>
       </div>
     </div>
