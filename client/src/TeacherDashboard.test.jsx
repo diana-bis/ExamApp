@@ -1,10 +1,12 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import TeacherDashboard from './TeacherDashboard';
-import { getAllExams } from './api/examService';
+import TeacherDashboard from './components/TeacherDashboard';
+import { examService } from './api/ExamService';
 
-vi.mock('./api/examService', () => ({
-  getAllExams: vi.fn()
+vi.mock('./api/ExamService', () => ({
+  examService: {
+    getAllExams: vi.fn()
+  }
 }));
 
 const exams = [
@@ -32,7 +34,7 @@ describe('TeacherDashboard', () => {
   });
 
   it('shows exams after loading', async () => {
-    getAllExams.mockResolvedValue(exams);
+    examService.getAllExams.mockResolvedValue(exams);
 
     render(<TeacherDashboard />);
 
@@ -43,7 +45,7 @@ describe('TeacherDashboard', () => {
   });
 
   it('filters exams by search text', async () => {
-    getAllExams.mockResolvedValue(exams);
+    examService.getAllExams.mockResolvedValue(exams);
 
     render(<TeacherDashboard />);
 
