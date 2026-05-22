@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAllExams } from './api/examService';
+import { examService } from '../api/ExamService';
 
 const TeacherDashboard = () => {
   // State to hold list of exams - starts as empty array because we haven't loaded yet from the API
@@ -25,15 +25,11 @@ const TeacherDashboard = () => {
 
   // Runs when component first loads
   useEffect(() => {
-    getAllExams()
-      // If request succeeds
+    examService.getAllExams()
       .then(data => {
-        // Save exams into state
         setExams(data);
-        // Stop loading
         setLoading(false);
       })
-      // If request fails, log error and stop loading
       .catch(err => {
         console.error(err);
         setLoading(false);
