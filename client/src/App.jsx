@@ -6,6 +6,7 @@ import RegisterPage from './components/RegisterPage';
 import TeacherDashboard from './components/TeacherDashboard';
 import StudentPortal from './components/StudentPortal';
 import TakeExam from './components/TakeExam';
+import ServiceTestPage from './components/ServiceTestPage';
 import { authService } from './services/AuthService';
 import { notifyService } from './services/NotifyService';
 import './App.css';
@@ -73,6 +74,10 @@ function App() {
                   <TakeExam />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/test-services"
+              element={<ServiceTestPage />}
             />
             <Route path="/" element={<Navigate to={defaultRoute} replace />} />
             <Route path="*" element={<Navigate to={defaultRoute} replace />} />
