@@ -45,11 +45,6 @@ class MockDatabase {
               options: ['var', 'let', 'function', 'class'],
               correctAnswer: 'let',
             },
-            {
-              id: 'q3',
-              type: 'OPEN_ENDED',
-              text: 'Explain what a closure is in JavaScript.',
-            },
           ],
         },
         {
@@ -142,6 +137,13 @@ class MockDatabase {
 
   getSubmissionById(id) {
     return this.data.submissions.find(s => s.id === id) ?? null;
+  }
+
+  updateSubmission(id, updates) {
+    const index = this.data.submissions.findIndex(s => s.id === id);
+    if (index === -1) return null;
+    this.data.submissions[index] = { ...this.data.submissions[index], ...updates };
+    return this.data.submissions[index];
   }
 }
 

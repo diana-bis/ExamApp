@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { examService } from '../api/ExamService';
-import { submissionService } from '../api/SubmissionService';
-import { authService } from '../services/AuthService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
@@ -11,8 +9,6 @@ const TeacherDashboard = () => {
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedExam, setSelectedExam] = useState(null);
-  const [scoresExam, setScoresExam] = useState(null);
-  const [scoresData, setScoresData] = useState({ submissions: [], users: [] });
   const [searchText, setSearchText] = useState('');
 
   const filteredExams = exams.filter(exam => {
@@ -33,69 +29,6 @@ const TeacherDashboard = () => {
     notifyService.notifySuccess(`"${exam.title}" deleted.`);
     loggerService.log('TeacherDashboard › deleted exam:', exam.id);
   };
-
-  useEffect(() => {
-    if (!scoresExam) return;
-    Promise.all([
-      submissionService.getSubmissionsByExam(scoresExam.id),
-      authService.getUsers(),
-    ]).then(([submissions, users]) => setScoresData({ submissions, users }))
-      .catch(err => loggerService.error('TeacherDashboard › scores load failed:', err));
-  }, [scoresExam]);
-
-  // ── Scores view ────────────────────────────────────────────────────────────
-  if (scoresExam) {
-    const { submissions, users } = scoresData;
-
-    return (
-      <div className="container mt-4">
-        <div className="card shadow">
-          <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 className="mb-0">Scores — {scoresExam.title}</h5>
-            <button className="btn btn-light btn-sm" onClick={() => setScoresExam(null)}>
-              Back to Dashboard
-            </button>
-          </div>
-          <div className="card-body">
-            {submissions.length === 0 ? (
-              <p className="text-muted">No submissions for this exam yet.</p>
-            ) : (
-              <table className="table table-bordered table-sm">
-                <thead className="table-light">
-                  <tr>
-                    <th>Student</th>
-                    <th>Grade</th>
-                    <th>Result</th>
-                    <th>Submitted</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {submissions.map(sub => {
-                    const student = users.find(u => u.id === sub.studentId);
-                    const passed = (sub.grade ?? 0) >= scoresExam.passingGrade;
-                    return (
-                      <tr key={sub.id}>
-                        <td>{student ? `${student.name} (@${student.username})` : sub.studentId}</td>
-                        <td><strong>{sub.grade ?? '—'}%</strong></td>
-                        <td>
-                          <span className={`badge ${passed ? 'bg-success' : 'bg-danger'}`}>
-                            {passed ? 'Pass' : 'Fail'}
-                          </span>
-                        </td>
-                        <td className="text-muted small">
-                          {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // ── Detail view ────────────────────────────────────────────────────────────
   if (selectedExam) {
@@ -189,7 +122,7 @@ const TeacherDashboard = () => {
                         <button className="btn btn-outline-info btn-sm" onClick={() => setSelectedExam(exam)}>
                           View Details
                         </button>
-                        <button className="btn btn-outline-secondary btn-sm" onClick={() => setScoresExam(exam)}>
+                        <button className="btn btn-outline-secondary btn-sm" onClick={() => navigate(`/exam/${exam.id}/scores`)}>
                           View Scores
                         </button>
                         <button className="btn btn-outline-warning btn-sm" onClick={() => navigate(`/exam/edit/${exam.id}`)}>

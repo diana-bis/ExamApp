@@ -51,6 +51,19 @@ class SubmissionService extends BaseApiService {
         const res = await fetch(`${configService.getApiBaseUrl()}/submissions/${id}`);
         return res.json();
     }
+
+    async updateSubmission(id, data) {
+        await this.simulateDelay(400);
+        if (configService.isMockMode()) {
+            return mockDb.updateSubmission(id, data);
+        }
+        const res = await fetch(`${configService.getApiBaseUrl()}/submissions/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        return res.json();
+    }
 }
 
 export const submissionService = new SubmissionService();

@@ -62,8 +62,9 @@ MILESTONE 3 — Lecturer (Teacher) Features
   [DONE]    Correct answer selection per MC question
   [DONE]    View student submissions per exam (scores table
              with student name, grade, pass/fail, timestamp)
-  [PARTIAL] Grade exams — MC questions auto-graded;
-             Open Ended answers stored but no manual grading UI
+  [DONE]    Grade exams — MC questions auto-graded;
+             Open Ended answers reviewed and graded via inline
+             grading panel in the scores view
   [PENDING] Publish / unpublish exams (draft vs live status)
   [PENDING] Written feedback per student submission
   [PENDING] Publish results to students after manual review
@@ -134,11 +135,12 @@ SUMMARY
 
   Done:     Full frontend, mock backend, teacher CRUD, student
             exam flow with timer, auth with role protection,
-            service/API layer ready for real backend.
+            service/API layer ready for real backend, manual
+            grading UI for open-ended answers.
 
-  Remaining: Real backend + database, manual grading UI,
-             publish/unpublish workflow, student grade history,
-             teacher feedback, and cloud deployment.
+  Remaining: Real backend + database, publish/unpublish workflow,
+             student grade history, teacher feedback on
+             submissions, and cloud deployment.
 
 
 ================================================================
@@ -281,6 +283,7 @@ SubmissionService  (extends BaseApiService)
   getSubmissions()                  → Promise<Submission[]>
   getSubmissionsByExam(examId)      → Promise<Submission[]>
   getSubmissionById(id)             → Promise<Submission>
+  updateSubmission(id, data)        → Promise<Submission>
 
 Real API endpoints (active when isMockMode() = false):
   GET    /api/exams
@@ -333,6 +336,7 @@ ROUTING  (HashRouter — GitHub Pages compatible)
   /teacher                protected — role: teacher
   /exam/new               protected — role: teacher
   /exam/edit/:examId      protected — role: teacher
+  /exam/:examId/scores    protected — role: teacher
   /student                protected — role: student
   /exam/:examId           protected — role: student
   /test-services          public (dev/debug panel)
