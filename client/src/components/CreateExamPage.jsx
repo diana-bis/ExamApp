@@ -1,66 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { examService } from '../api/ExamService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
+import useExamForm from '../hooks/useExamForm';
 
 const CreateExamPage = () => {
+    // get exam id from URL
     const navigate = useNavigate();
 
-    const [form, setForm] = useState({
-        title: '',
-        timeLimit: 30,
-        passingGrade: 60,
-        questions: [],
-    });
-
-    // ── Field helpers ──────────────────────────────────────────────────────────
-
-    const setField = (field, value) =>
-        setForm(prev => ({ ...prev, [field]: value }));
-
-    const updateQuestion = (qi, changes) =>
-        setForm(prev => {
-            const questions = [...prev.questions];
-            questions[qi] = { ...questions[qi], ...changes };
-            return { ...prev, questions };
-        });
-
-    const removeQuestion = (qi) =>
-        setForm(prev => ({ ...prev, questions: prev.questions.filter((_, i) => i !== qi) }));
-
-    const addQuestion = (type) => {
-        const q = type === 'MULTIPLE_CHOICE'
-            ? { id: `q${Date.now()}`, type, text: '', options: ['', ''], correctAnswer: '' }
-            : { id: `q${Date.now()}`, type, text: '' };
-        setForm(prev => ({ ...prev, questions: [...prev.questions, q] }));
-    };
-
-    const updateOption = (qi, oi, value) =>
-        setForm(prev => {
-            const questions = [...prev.questions];
-            const options = [...questions[qi].options];
-            options[oi] = value;
-            questions[qi] = { ...questions[qi], options };
-            return { ...prev, questions };
-        });
-
-    const removeOption = (qi, oi) =>
-        setForm(prev => {
-            const questions = [...prev.questions];
-            questions[qi] = { ...questions[qi], options: questions[qi].options.filter((_, i) => i !== oi) };
-            return { ...prev, questions };
-        });
-
-    const addOption = (qi) =>
-        setForm(prev => {
-            const questions = [...prev.questions];
-            questions[qi] = { ...questions[qi], options: [...questions[qi].options, ''] };
-            return { ...prev, questions };
-        });
+    // Shared exam form hook
+    const { form, setField, updateQuestion, removeQuestion, addQuestion, updateOption, removeOption, addOption } =
+        useExamForm({ title: '', timeLimit: 30, passingGrade: 60, questions: [] });
 
     // ── Validation & save ──────────────────────────────────────────────────────
 
+    // validate form and save new exam to backend, then navigate back to dashboard
     const handleCreate = async () => {
         if (!form.title.trim()) {
             notifyService.notifyError('Title is required.');

@@ -6,19 +6,53 @@ import { authService } from '../services/AuthService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
+/*
+ * Computes final grade for submission.
+ *
+ * Logic:
+ *   - MC questions:
+ *       correct = 100
+ *       incorrect = 0
+ *
+ *   - Open-ended:
+ *       teacher manually enters score
+ *
+ * Final grade:
+ *   average of all question scores
+ */
+
 const computeGrade = (questions, answers, oeScoresInput) => {
     const totalQ = questions.length;
+    // avoid division by zero
     if (totalQ === 0) return 0;
+    // compute score for each question, then average
     const scores = questions.map(q => {
+        // MULTIPLE CHOICE
         if (q.type === 'MULTIPLE_CHOICE') {
             return answers?.[q.id] === q.correctAnswer ? 100 : 0;
         }
+        // OPEN-ENDED 
         return Math.min(100, Math.max(0, Number(oeScoresInput[q.id]) || 0));
     });
+    // average and round to nearest integer
     return Math.round(scores.reduce((a, b) => a + b, 0) / totalQ);
 };
 
+/*
+ * ExamScoresPage
+ *
+ * Teacher grading page.
+ *
+ * Responsibilities:
+ *   - show all submissions for exam
+ *   - calculate grades
+ *   - manual grading for open-ended questions
+ *   - publish/unpublish results
+ *   - save teacher feedback
+ */
+
 const ExamScoresPage = () => {
+    // get examId from URL params and navigate function for redirection
     const { examId } = useParams();
     const navigate = useNavigate();
 
@@ -27,16 +61,24 @@ const ExamScoresPage = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    // detemines which submission is currently being graded 
     const [gradingSubId, setGradingSubId] = useState(null);
+    // Stores open-ended question scores
     const [oeScoresInput, setOeScoresInput] = useState({});
+    // override state allows teacher to ignore calculated grade and enter a custom grade instead
     const [useOverride, setUseOverride] = useState(false);
+    // overrideInput stores the custom grade value when useOverride is true
     const [overrideInput, setOverrideInput] = useState('');
+    // teacher feedback input
     const [feedbackInput, setFeedbackInput] = useState('');
 
     useEffect(() => {
         Promise.all([
+            // load exam details
             examService.getExamById(examId),
+            // load submissions for exam
             submissionService.getSubmissionsByExam(examId),
+            // load all users to match student names in submission list
             authService.getUsers(),
         ])
             .then(([examData, subs, userList]) => {
@@ -48,9 +90,12 @@ const ExamScoresPage = () => {
             .finally(() => setLoading(false));
     }, [examId]);
 
+    // Opens grading panel for selected submission
     const openGrading = (sub, questions) => {
+        // get only open-ended questions
         const oeQs = questions.filter(q => q.type === 'OPEN_ENDED');
         setGradingSubId(sub.id);
+        // preload existing open-ended scores
         setOeScoresInput(
             Object.fromEntries(oeQs.map(q => [q.id, String(sub.oeScores?.[q.id] ?? '')]))
         );
@@ -59,6 +104,7 @@ const ExamScoresPage = () => {
         setFeedbackInput(sub.feedback ?? '');
     };
 
+    // Publish/unpublish results to student
     const handlePublish = async (sub) => {
         const resultsPublished = !sub.resultsPublished;
         await submissionService.updateSubmission(sub.id, { resultsPublished });
@@ -67,6 +113,7 @@ const ExamScoresPage = () => {
         loggerService.log('ExamScoresPage › publish toggle:', sub.id, '→', resultsPublished);
     };
 
+    // Save grade and feedback 
     const handleSaveGrade = async (sub) => {
         const questions = exam.questions || [];
         const oeQs = questions.filter(q => q.type === 'OPEN_ENDED');
@@ -76,6 +123,7 @@ const ExamScoresPage = () => {
         );
 
         let grade;
+        // manual override mode
         if (useOverride) {
             grade = Number(overrideInput);
             if (isNaN(grade) || grade < 0 || grade > 100) {
@@ -87,6 +135,7 @@ const ExamScoresPage = () => {
         }
 
         const feedback = feedbackInput.trim();
+        // update submission with new grade, feedback, and open-ended scores
         await submissionService.updateSubmission(sub.id, { grade, feedback, oeScores: oeScoresNumeric });
         setSubmissions(prev =>
             prev.map(s => s.id === sub.id ? { ...s, grade, feedback, oeScores: oeScoresNumeric } : s)
@@ -108,6 +157,7 @@ const ExamScoresPage = () => {
         );
     }
 
+    // separate multiple choice and open-ended questions for grading display
     const questions = exam.questions || [];
     const mcQs = questions.filter(q => q.type === 'MULTIPLE_CHOICE');
     const oeQs = questions.filter(q => q.type === 'OPEN_ENDED');

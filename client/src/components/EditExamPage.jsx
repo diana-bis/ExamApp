@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { examService } from '../api/ExamService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
+import useExamForm from '../hooks/useExamForm';
 
 const EditExamPage = () => {
+    // get exam id from URL
     const { examId } = useParams();
     const navigate = useNavigate();
 
-    const [form, setForm] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // Shared exam form hook
+    const { form, setForm, setField, updateQuestion, removeQuestion, addQuestion, updateOption, removeOption, addOption } =
+        useExamForm(null);
 
+    const [loading, setLoading] = React.useState(true);
+
+    // load exam details on mount
     useEffect(() => {
         examService.getExamById(examId)
             .then(exam => setForm(JSON.parse(JSON.stringify(exam))))
@@ -18,10 +24,12 @@ const EditExamPage = () => {
             .finally(() => setLoading(false));
     }, [examId]);
 
+    // loading screen
     if (loading) {
         return <div className="container mt-4"><p className="text-muted">Loading...</p></div>;
     }
 
+    // if form is null after loading, exam was not found
     if (!form) {
         return (
             <div className="container mt-4">
@@ -30,53 +38,9 @@ const EditExamPage = () => {
         );
     }
 
-    // ── Field helpers ──────────────────────────────────────────────────────────
-
-    const setField = (field, value) =>
-        setForm(prev => ({ ...prev, [field]: value }));
-
-    const updateQuestion = (qi, changes) =>
-        setForm(prev => {
-            const questions = [...prev.questions];
-            questions[qi] = { ...questions[qi], ...changes };
-            return { ...prev, questions };
-        });
-
-    const removeQuestion = (qi) =>
-        setForm(prev => ({ ...prev, questions: prev.questions.filter((_, i) => i !== qi) }));
-
-    const addQuestion = (type) => {
-        const q = type === 'MULTIPLE_CHOICE'
-            ? { id: `q${Date.now()}`, type, text: '', options: ['', ''], correctAnswer: '' }
-            : { id: `q${Date.now()}`, type, text: '' };
-        setForm(prev => ({ ...prev, questions: [...prev.questions, q] }));
-    };
-
-    const updateOption = (qi, oi, value) =>
-        setForm(prev => {
-            const questions = [...prev.questions];
-            const options = [...questions[qi].options];
-            options[oi] = value;
-            questions[qi] = { ...questions[qi], options };
-            return { ...prev, questions };
-        });
-
-    const removeOption = (qi, oi) =>
-        setForm(prev => {
-            const questions = [...prev.questions];
-            questions[qi] = { ...questions[qi], options: questions[qi].options.filter((_, i) => i !== oi) };
-            return { ...prev, questions };
-        });
-
-    const addOption = (qi) =>
-        setForm(prev => {
-            const questions = [...prev.questions];
-            questions[qi] = { ...questions[qi], options: [...questions[qi].options, ''] };
-            return { ...prev, questions };
-        });
-
     // ── Save ───────────────────────────────────────────────────────────────────
 
+    // validate form and save changes to backend, then navigate back to dashboard
     const handleSave = async () => {
         if (!form.title.trim()) {
             notifyService.notifyError('Title is required.');
@@ -161,7 +125,7 @@ const EditExamPage = () => {
                             <button className="btn btn-outline-primary btn-sm" onClick={() => addQuestion('MULTIPLE_CHOICE')}>
                                 + Multiple Choice
                             </button>
-                            <button className="btn btn-outline-primary btn-sm btn-sm" onClick={() => addQuestion('OPEN_ENDED')}>
+                            <button className="btn btn-outline-primary btn-sm" onClick={() => addQuestion('OPEN_ENDED')}>
                                 + Open Ended
                             </button>
                         </div>

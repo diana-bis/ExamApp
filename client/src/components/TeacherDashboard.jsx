@@ -8,28 +8,37 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
+  // currently selected exam for details screen
+  // null = dashboard mode
   const [selectedExam, setSelectedExam] = useState(null);
   const [searchText, setSearchText] = useState('');
 
+  // filter exams based on search text matching title or id (case-insensitive)
   const filteredExams = exams.filter(exam => {
     const s = searchText.toLowerCase();
     return (exam.title || '').toLowerCase().includes(s) || (exam.id || '').toLowerCase().includes(s);
   });
 
+  // runs once when component mounts, loads all exams from service
   useEffect(() => {
     examService.getAllExams()
+      // on success, save exams to state and turn off loading
       .then(data => { setExams(data); setLoading(false); })
       .catch(err => { loggerService.error('TeacherDashboard › getAllExams():', err); setLoading(false); });
   }, []);
 
+  // toggle exam status between 'draft' and 'published' 
   const handleToggleStatus = async (exam) => {
     const newStatus = exam.status === 'published' ? 'draft' : 'published';
+    // update status in backend
     await examService.updateExam(exam.id, { status: newStatus });
+    // update status in React state
     setExams(prev => prev.map(e => e.id === exam.id ? { ...e, status: newStatus } : e));
     notifyService.notifySuccess(`"${exam.title}" is now ${newStatus}.`);
     loggerService.log('TeacherDashboard › status changed:', exam.id, '→', newStatus);
   };
 
+  // delete exam after confirming with user - this action cannot be undone
   const handleDelete = async (exam) => {
     if (!window.confirm(`Delete "${exam.title}"? This cannot be undone.`)) return;
     await examService.deleteExam(exam.id);
@@ -39,7 +48,9 @@ const TeacherDashboard = () => {
   };
 
   // ── Detail view ────────────────────────────────────────────────────────────
+  // if an exam is selected, show details screen instead of dashboard
   if (selectedExam) {
+    // empty array if no questions exist
     const questions = selectedExam.questions || [];
 
     return (
@@ -57,6 +68,7 @@ const TeacherDashboard = () => {
               <span><strong>Time limit:</strong> {selectedExam.timeLimit} min</span>
               <span><strong>Passing grade:</strong> {selectedExam.passingGrade}%</span>
             </div>
+            {/* questions section */}
             <p><strong>Questions ({questions.length}):</strong></p>
             <div className="list-group">
               {questions.map((q, index) => (
