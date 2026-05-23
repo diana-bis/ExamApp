@@ -129,20 +129,6 @@ MILESTONE 7 — Deployment
   [PENDING] Environment variables for API URL and secrets
   [PENDING] CI/CD pipeline
 
-----------------------------------------------------------------
-SUMMARY
-----------------------------------------------------------------
-
-  Done:     Full frontend, mock backend, teacher CRUD, student
-            exam flow with timer, auth with role protection,
-            service/API layer ready for real backend, manual
-            grading UI for open-ended answers.
-
-  Remaining: Real backend + database, publish/unpublish workflow,
-             student grade history, teacher feedback on
-             submissions, and cloud deployment.
-
-
 ================================================================
 ARCHITECTURE LAYERS
 ================================================================
