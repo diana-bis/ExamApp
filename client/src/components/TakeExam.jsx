@@ -7,34 +7,60 @@ import { loggerService } from '../services/LoggerService';
 import { notifyService } from '../services/NotifyService';
 import ExamForm from './ExamForm';
 
+// Convert seconds into MM:SS format
 const formatTime = (secs) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
 };
 
+/*
+ * TakeExam
+ *
+ * Responsibilities:
+ *   - load exam
+ *   - display questions
+ *   - store student answers
+ *   - manage countdown timer
+ *   - auto-submit when time expires
+ *   - calculate MC grade
+ *   - submit answers
+ *   - display results
+ */
+
 const TakeExam = () => {
+    // get exam id from URL, and current user from auth service
     const { examId } = useParams();
     const navigate = useNavigate();
     const currentUser = authService.getCurrentUser();
 
+    // loaded exam object
     const [exam, setExam] = useState(null);
+    // loading state for fetching exam
     const [loading, setLoading] = useState(true);
+    // student's selected answers, stored as { questionId: answer }
     const [answers, setAnswers] = useState({});
+    // submission state to prevent multiple submits
     const [submitting, setSubmitting] = useState(false);
+    // final result object after submission
     const [result, setResult] = useState(null);
+    // time left in seconds for countdown timer
     const [timeLeft, setTimeLeft] = useState(null);
 
+    // answersRef stores latest answers
     const answersRef = useRef({});
+    // intervalRef stores timer interval id
     const intervalRef = useRef(null);
 
     // Keep ref in sync so the timer's auto-submit always sees the latest answers
     useEffect(() => { answersRef.current = answers; }, [answers]);
 
+    // Load exam details when page opens
     useEffect(() => {
         loggerService.log(`TakeExam: loading exam "${examId}"`);
         examService.getExamById(examId)
             .then(data => {
+                // store exam
                 setExam(data);
                 loggerService.log(`TakeExam: exam loaded — "${data.title}"`);
             })
@@ -47,10 +73,12 @@ const TakeExam = () => {
 
     // Start countdown once exam data arrives
     useEffect(() => {
+        // no exam yet
         if (!exam) return;
         const seconds = exam.timeLimit * 60;
         setTimeLeft(seconds);
 
+        // create interval that ticks every second and decreases time left
         intervalRef.current = setInterval(() => {
             setTimeLeft(prev => {
                 if (prev <= 1) {
@@ -75,12 +103,16 @@ const TakeExam = () => {
 
     // ── Submission logic ───────────────────────────────────────────────────────
 
+    // Submit exam answers to backend, then calculate and display results
     const doSubmit = async (currentAnswers) => {
+        // stop timer
         clearInterval(intervalRef.current);
+        // start submitting state
         setSubmitting(true);
         loggerService.log(`TakeExam: submitting answers for exam "${examId}"`);
 
         try {
+            // calculate grade for multiple choice questions
             const mcQuestions = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE');
             const details = exam.questions.map(q => {
                 if (q.type === 'MULTIPLE_CHOICE') {
@@ -94,6 +126,7 @@ const TakeExam = () => {
             const mcCorrect = details.filter(d => d.type === 'MULTIPLE_CHOICE' && d.correct).length;
             const grade = mcTotal > 0 ? Math.round((mcCorrect / mcTotal) * 100) : 0;
 
+            // detect open-ended questions - if any exist, results cannot be published until teacher reviews them, set resultsPublished to false
             const hasOE = exam.questions.some(q => q.type === 'OPEN_ENDED');
             await submissionService.submitExam({
                 studentId: currentUser?.id,
@@ -105,6 +138,7 @@ const TakeExam = () => {
 
             loggerService.log(`TakeExam: submission complete — grade ${grade}%`);
             notifyService.notifySuccess(`Submitted! You scored ${mcCorrect}/${mcTotal} (${grade}%).`);
+            // show results screen with MC grading - if open-ended questions exist, show "pending review" instead of pass/fail
             setResult({ grade, mcCorrect, mcTotal, details, passingGrade: exam.passingGrade });
         } catch (err) {
             loggerService.error('TakeExam: submission failed:', err.message);
@@ -114,7 +148,9 @@ const TakeExam = () => {
         }
     };
 
+    //  validate before submission
     const handleSubmit = () => {
+        // require all MC questions answered
         const unansweredMC = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE' && !answers[q.id]);
         if (unansweredMC.length > 0) {
             notifyService.notifyError(`Please answer all multiple choice questions. (${unansweredMC.length} remaining)`);
@@ -123,14 +159,17 @@ const TakeExam = () => {
         doSubmit(answers);
     };
 
+    // handle answer selection for multiple choice questions
     const handleSelectMC = (questionId, option) =>
         setAnswers(prev => ({ ...prev, [questionId]: option }));
 
+    // handle text input for open-ended questions
     const handleOpenEnded = (questionId, text) =>
         setAnswers(prev => ({ ...prev, [questionId]: text }));
 
     // ── Views ──────────────────────────────────────────────────────────────────
 
+    // loading state
     if (loading) {
         return (
             <div className="container mt-4">
@@ -141,6 +180,7 @@ const TakeExam = () => {
         );
     }
 
+    // if exam failed to load, show error message
     if (!exam) {
         return (
             <div className="container mt-4">
@@ -156,7 +196,9 @@ const TakeExam = () => {
         );
     }
 
+    // Show results screen after submission
     if (result) {
+        // determine pass/fail based on grade and passing grade 
         const passed = result.grade >= result.passingGrade;
         return (
             <div className="container mt-4">
@@ -211,7 +253,10 @@ const TakeExam = () => {
         );
     }
 
+    // show exam form with questions and countdown timer
+    // count answered multiple choice questions
     const mcAnswered = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE' && answers[q.id]).length;
+    // total multiple choice questions
     const mcTotal = exam.questions.filter(q => q.type === 'MULTIPLE_CHOICE').length;
     const timerBadge = timeLeft <= 30
         ? 'bg-danger'
@@ -237,12 +282,19 @@ const TakeExam = () => {
                 </div>
                 <div className="card-body">
                     <ExamForm
+                        // exam questions
                         questions={exam.questions}
+                        // current student answers
                         answers={answers}
+                        //  MC answer handler
                         onSelectMC={handleSelectMC}
+                        // OE answer handler
                         onOpenEnded={handleOpenEnded}
+                        // submit handler
                         onSubmit={handleSubmit}
+                        // cancel exam
                         onCancel={() => navigate('/student')}
+                        // loading state
                         submitting={submitting}
                     />
                 </div>

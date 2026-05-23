@@ -8,25 +8,34 @@ import { notifyService } from '../services/NotifyService';
 
 const StudentPortal = () => {
   const navigate = useNavigate();
+  // currently logged-in user
   const currentUser = authService.getCurrentUser();
 
+  // exam ID typed by student
   const [examId, setExamId] = useState('');
+  // currently loaded exam
   const [exam, setExam] = useState(null);
+  // loading state for fetching exam
   const [loading, setLoading] = useState(false);
+  // student's past submissions 
   const [mySubmissions, setMySubmissions] = useState([]);
   const [allExams, setAllExams] = useState([]);
 
+  // Runs once when component mounts
   useEffect(() => {
+    // safety check - if no user is logged in, don't attempt to load submission history
     if (!currentUser) return;
     Promise.all([
       submissionService.getSubmissionsByStudent(currentUser.id),
       examService.getAllExams(),
     ]).then(([subs, exams]) => {
+      // sort submissions by submission date (newest first) 
       setMySubmissions(subs.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)));
       setAllExams(exams);
     }).catch(err => loggerService.error('StudentPortal › load history failed:', err));
   }, []);
 
+  // Search exam by ID
   const handleFetchExam = async () => {
     const id = examId.trim();
     if (!id) {
@@ -38,8 +47,10 @@ const StudentPortal = () => {
     setExam(null);
     loggerService.log(`Student fetching exam — id: "${id}"`);
 
+    // fetch exam from backend/mockDb
     try {
       const data = await examService.getExamById(id);
+      // prevent access to unpublished exams
       if (data.status && data.status !== 'published') {
         notifyService.notifyError('This exam is not yet available.');
         return;
@@ -55,12 +66,15 @@ const StudentPortal = () => {
     }
   };
 
+  // Allow Enter key to search exam
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleFetchExam();
   };
 
+  // when student clicks "Begin Exam", navigate to exam page with exam id in URL
   const handleBegin = () => {
     loggerService.log(`Student beginning exam — id: "${exam.id}"`);
+    // navigate to TakeExam page
     navigate(`/exam/${exam.id}`);
   };
 

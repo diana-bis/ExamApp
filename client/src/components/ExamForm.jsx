@@ -1,8 +1,10 @@
 import React from 'react';
 
+// Component for rendering exam questions and collecting answers from student
 const ExamForm = ({ questions, answers, onSelectMC, onOpenEnded, onSubmit, onCancel, submitting }) => {
     return (
         <>
+            {/* render all questions */}
             {questions.map((q, index) => (
                 <div key={q.id} className="mb-4 p-3 border rounded">
                     <div className="d-flex justify-content-between align-items-start mb-2">
