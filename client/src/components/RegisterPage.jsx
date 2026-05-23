@@ -5,40 +5,53 @@ import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
 const RegisterPage = () => {
+    // navigation hook to redirect after successful registration
     const navigate = useNavigate();
+    // form state
     const [form, setForm] = useState({ name: '', username: '', password: '', confirmPassword: '', role: 'student' });
+    // state for toggling password visibility
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [errors, setErrors] = useState({});
+    // loading state to disable form while request is in progress
     const [loading, setLoading] = useState(false);
 
+    // helper to update form state and clear field-specific errors on change
     const setField = (field, value) => {
         setForm(prev => ({ ...prev, [field]: value }));
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
     };
 
+    // frontend validation to check form fields before submitting
     const validate = () => {
         const next = {};
-        if (!form.name.trim())                              next.name            = 'Name is required.';
-        if (!form.username.trim())                          next.username        = 'Username is required.';
-        if (!form.password)                                 next.password        = 'Password is required.';
+        if (!form.name.trim()) next.name = 'Name is required.';
+        if (!form.username.trim()) next.username = 'Username is required.';
+        if (!form.password) next.password = 'Password is required.';
         if (form.password.length > 0 && form.password.length < 6)
-                                                            next.password        = 'Password must be at least 6 characters.';
-        if (form.password !== form.confirmPassword)         next.confirmPassword = 'Passwords do not match.';
+            next.password = 'Password must be at least 6 characters.';
+        if (form.password !== form.confirmPassword) next.confirmPassword = 'Passwords do not match.';
         return next;
     };
 
+    // handle form submission
     const handleSubmit = async (e) => {
+        // prevent form from reloading page
         e.preventDefault();
+        // run frontend validation
         const validationErrors = validate();
+        // if validation failed
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
             return;
         }
 
+        // begin loading state
         setLoading(true);
+        // log registration attempt
         loggerService.log(`Register attempt — username: "${form.username.trim()}", role: "${form.role}"`);
 
+        // call auth service to perform registration - this will throw an error if registration fails
         try {
             const user = await authService.register({
                 name: form.name,
@@ -64,6 +77,7 @@ const RegisterPage = () => {
 
     return (
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+            {/* register card */}
             <div className="card shadow" style={{ width: '100%', maxWidth: '440px' }}>
                 <div className="card-header bg-primary text-white text-center py-3">
                     <h4 className="mb-0">E-Test System</h4>
@@ -112,6 +126,7 @@ const RegisterPage = () => {
                                     onChange={e => setField('password', e.target.value)}
                                     autoComplete="new-password"
                                 />
+                                {/* password visibility toggle */}
                                 <button
                                     type="button"
                                     className="btn btn-outline-secondary"
@@ -136,6 +151,7 @@ const RegisterPage = () => {
                                     onChange={e => setField('confirmPassword', e.target.value)}
                                     autoComplete="new-password"
                                 />
+                                {/* password visibility toggle */}
                                 <button
                                     type="button"
                                     className="btn btn-outline-secondary"
@@ -147,7 +163,7 @@ const RegisterPage = () => {
                             </div>
                             {errors.confirmPassword && <div className="invalid-feedback d-block">{errors.confirmPassword}</div>}
                         </div>
-
+                        {/* ROLE SELECTION */}
                         <div className="mb-4">
                             <label className="form-label fw-semibold d-block">Role</label>
                             <div className="d-flex gap-4">
