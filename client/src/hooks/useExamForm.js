@@ -1,4 +1,35 @@
 import { useState } from 'react';
+import { notifyService } from '../services/NotifyService';
+
+export const validateExamForm = (form) => {
+    if (!form.title.trim()) {
+        notifyService.notifyError('Title is required.');
+        return false;
+    }
+    if (!form.timeLimit || form.timeLimit <= 0) {
+        notifyService.notifyError('Time limit must be greater than 0.');
+        return false;
+    }
+    if (form.passingGrade < 0 || form.passingGrade > 100) {
+        notifyService.notifyError('Passing grade must be between 0 and 100.');
+        return false;
+    }
+    for (const q of form.questions) {
+        if (!q.text.trim()) {
+            notifyService.notifyError('All questions must have text.');
+            return false;
+        }
+        if (q.type === 'MULTIPLE_CHOICE' && q.options.some(o => !o.trim())) {
+            notifyService.notifyError('All multiple choice options must be filled in.');
+            return false;
+        }
+        if (q.type === 'MULTIPLE_CHOICE' && !q.correctAnswer) {
+            notifyService.notifyError('Select a correct answer for each multiple choice question.');
+            return false;
+        }
+    }
+    return true;
+};
 
 const useExamForm = (initialForm) => {
     const [form, setForm] = useState(initialForm);

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { examService } from '../api/ExamService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
-import useExamForm from '../hooks/useExamForm';
+import useExamForm, { validateExamForm } from '../hooks/useExamForm';
 
 const EditExamPage = () => {
     // get exam id from URL
@@ -42,32 +42,7 @@ const EditExamPage = () => {
 
     // validate form and save changes to backend, then navigate back to dashboard
     const handleSave = async () => {
-        if (!form.title.trim()) {
-            notifyService.notifyError('Title is required.');
-            return;
-        }
-        if (!form.timeLimit || form.timeLimit <= 0) {
-            notifyService.notifyError('Time limit must be greater than 0.');
-            return;
-        }
-        if (form.passingGrade < 0 || form.passingGrade > 100) {
-            notifyService.notifyError('Passing grade must be between 0 and 100.');
-            return;
-        }
-        for (const q of form.questions) {
-            if (!q.text.trim()) {
-                notifyService.notifyError('All questions must have text.');
-                return;
-            }
-            if (q.type === 'MULTIPLE_CHOICE' && q.options.some(o => !o.trim())) {
-                notifyService.notifyError('All multiple choice options must be filled in.');
-                return;
-            }
-            if (q.type === 'MULTIPLE_CHOICE' && !q.correctAnswer) {
-                notifyService.notifyError('Select a correct answer for each multiple choice question.');
-                return;
-            }
-        }
+        if (!validateExamForm(form)) return;
 
         await examService.updateExam(form.id, form);
         notifyService.notifySuccess(`"${form.title}" saved.`);
