@@ -14,27 +14,36 @@ import { authService } from './services/AuthService';
 import { notifyService } from './services/NotifyService';
 import './App.css';
 
+// component that protects pages from unauthorized users
 const ProtectedRoute = ({ user, requiredRole, children }) => {
+  // if no user is logged in, send to login page
   if (!user) return <Navigate to="/login" replace />;
+  // if page requires a role and user has another role, send to their respective dashboard
   if (requiredRole && user.role !== requiredRole) {
     return <Navigate to={user.role === 'teacher' ? '/teacher' : '/student'} replace />;
   }
+  // if user is authorized, render the page
   return children;
 };
 
 function App() {
+  // load current user from localStorage when app first starts
   const [user, setUser] = useState(() => authService.getCurrentUser());
 
+  // called after successful login
   const handleLogin = (loggedInUser) => {
     setUser(loggedInUser);
   };
 
+  // logout user from service and React state
   const handleLogout = async () => {
     await authService.logout();
     setUser(null);
+    // show logout notification
     notifyService.notifyInfo('You have been logged out.');
   };
 
+  // decide where user should be redirected by default
   const defaultRoute = user
     ? (user.role === 'teacher' ? '/teacher' : '/student')
     : '/login';
@@ -42,18 +51,22 @@ function App() {
   return (
     <HashRouter>
       <div className="App">
+        {/* show navbar only when user is logged in */}
         {user && <Navbar user={user} onLogout={handleLogout} />}
 
         <main>
           <Routes>
+            {/* login page */}
             <Route
               path="/login"
               element={user ? <Navigate to={defaultRoute} replace /> : <LoginPage onLogin={handleLogin} />}
             />
+            {/* registration page */}
             <Route
               path="/register"
               element={user ? <Navigate to={defaultRoute} replace /> : <RegisterPage />}
             />
+            {/* teacher dashboard */}
             <Route
               path="/teacher"
               element={
@@ -62,6 +75,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* student portal */}
             <Route
               path="/student"
               element={
@@ -70,6 +84,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* page for student to take an exam */}
             <Route
               path="/exam/:examId"
               element={
@@ -78,6 +93,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* page for teacher to create a new exam */}
             <Route
               path="/exam/new"
               element={
@@ -86,6 +102,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* page for teacher to edit an existing exam */}
             <Route
               path="/exam/edit/:examId"
               element={
@@ -94,6 +111,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* page for teacher to view scores and grade submissions for an exam */}
             <Route
               path="/exam/:examId/scores"
               element={
@@ -102,10 +120,12 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            {/* public debug/service test page */}
             <Route
               path="/test-services"
               element={<ServiceTestPage />}
             />
+            {/* redirect unknown URLs to default route */}
             <Route path="/" element={<Navigate to={defaultRoute} replace />} />
             <Route path="*" element={<Navigate to={defaultRoute} replace />} />
           </Routes>
