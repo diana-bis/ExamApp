@@ -1,11 +1,29 @@
+/*
+ * MockDatabase
+ *
+ * In-memory fake database used while no real backend exists.
+ * Simulates backend/database behavior for development.
+ *
+ * Stores:
+ *   - users
+ *   - exams
+ *   - submissions
+ *
+ * Singleton pattern:
+ *   Only ONE shared database instance exists across the app.
+ */
+
 class MockDatabase {
+  // static property to hold the singleton instance
   static _instance = null;
 
   constructor() {
+    // if an instance already exists, return it to enforce singleton pattern
     if (MockDatabase._instance) {
       return MockDatabase._instance;
     }
 
+    // initialize data with some default users and exams
     this.data = {
       users: [
         {
@@ -26,6 +44,7 @@ class MockDatabase {
 
       exams: [
         {
+          // exam 1 with only multiple choice questions
           id: 'EX001',
           title: 'JavaScript Basics',
           status: 'published',
@@ -49,6 +68,7 @@ class MockDatabase {
           ],
         },
         {
+          // exam 2 with multiple choice and open-ended questions
           id: 'EX002',
           title: 'React Fundamentals',
           status: 'published',
@@ -83,14 +103,17 @@ class MockDatabase {
         },
       ],
 
+      // exam submissions made by students
       submissions: [],
     };
 
+    // save singleton instance
     MockDatabase._instance = this;
   }
 
   // --- User helpers ---
 
+  // find user by username (used for login)
   findUser(username) {
     return (
       this.data.users.find(
@@ -99,6 +122,7 @@ class MockDatabase {
     );
   }
 
+  // add new user (used for registration)
   addUser(user) {
     this.data.users.push(user);
     return user;
@@ -106,19 +130,23 @@ class MockDatabase {
 
   // --- Exam helpers ---
 
+  // find exam by id (used for exam details, student taking exam, and teacher editing exam)
   findExam(id) {
     return this.data.exams.find(e => e.id === id) ?? null;
   }
 
+  // add new exam (used by teacher when creating an exam)
   addExam(exam) {
     this.data.exams.push(exam);
     return exam;
   }
 
+  // delete exam by id (used by teacher when deleting an exam)
   deleteExam(id) {
     this.data.exams = this.data.exams.filter(e => e.id !== id);
   }
 
+  // update exam by id with new data (used by teacher when editing an exam)
   updateExam(id, updated) {
     const index = this.data.exams.findIndex(e => e.id === id);
     if (index === -1) return null;
@@ -128,19 +156,23 @@ class MockDatabase {
 
   // --- Submission helpers ---
 
+  // add new submission (used when student submits an exam)
   addSubmission(submission) {
     this.data.submissions.push(submission);
     return submission;
   }
 
+  // get all submissions (used by teacher to view all submissions for an exam)
   getSubmissions() {
     return [...this.data.submissions];
   }
 
+  // get one submission by id (used when student views their submission details)
   getSubmissionById(id) {
     return this.data.submissions.find(s => s.id === id) ?? null;
   }
 
+  // update submission by id with new data (used when teacher grades a submission)
   updateSubmission(id, updates) {
     const index = this.data.submissions.findIndex(s => s.id === id);
     if (index === -1) return null;
@@ -149,4 +181,5 @@ class MockDatabase {
   }
 }
 
+// export a singleton instance of the MockDatabase class
 export const mockDb = new MockDatabase();
