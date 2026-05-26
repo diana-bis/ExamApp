@@ -6,12 +6,15 @@ import { authService } from '../services/AuthService';
 import { loggerService } from '../services/LoggerService';
 import { notifyService } from '../services/NotifyService';
 
+const HEADER_GRADIENT = 'linear-gradient(135deg, #1a237e 0%, #0288d1 60%, #00bcd4 100%)';
+const SIDEBAR_ACTIVE   = 'linear-gradient(135deg, #0288d1, #00bcd4)';
+
 const StudentPortal = () => {
   const navigate = useNavigate();
   // currently logged-in user
   const currentUser = authService.getCurrentUser();
 
-  const [view, setView] = useState('findExam');
+  const [view, setView] = useState('findExam'); // 'findExam' | 'myResults'
 
   // exam ID typed by student
   const [examId, setExamId] = useState('');
@@ -102,14 +105,23 @@ const StudentPortal = () => {
   };
 
   const renderFindExamView = () => (
-    <div>
-      <div className="mb-4">
-        <label className="form-label fw-semibold">Enter Exam ID to Start</label>
+    <div className="d-flex flex-column align-items-center" style={{ maxWidth: 520, margin: '0 auto' }}>
+
+      {/* Hero icon */}
+      <div className="rounded-circle d-flex align-items-center justify-content-center mb-3"
+        style={{ width: 72, height: 72, background: SIDEBAR_ACTIVE, boxShadow: '0 4px 16px rgba(2,136,209,0.35)' }}>
+        <i className="bi bi-search text-white" style={{ fontSize: '1.8rem' }}></i>
+      </div>
+      <h5 className="fw-bold mb-1 text-center">Find Your Exam</h5>
+      <p className="text-muted small mb-4 text-center">Type the exam title or ID to get started</p>
+
+      <div className="w-100 mb-2">
         <div className="position-relative">
-          <div className="input-group">
+          <div className="input-group input-group-lg shadow-sm">
             <input
               type="text"
-              className="form-control"
+              className="form-control border-0"
+              style={{ boxShadow: 'none', borderRadius: '10px 0 0 10px', background: '#f0f7ff' }}
               placeholder="Search by title or ID"
               value={examId}
               onChange={(e) => { setExamId(e.target.value); setExam(null); }}
@@ -117,25 +129,32 @@ const StudentPortal = () => {
               autoFocus
             />
             <button
-              className="btn btn-primary"
+              className="btn text-white px-4 fw-semibold"
               type="button"
               onClick={handleFetchExam}
               disabled={loading}
+              style={{ background: SIDEBAR_ACTIVE, borderRadius: '0 10px 10px 0', border: 'none' }}
             >
-              {loading ? 'Searching...' : 'Find Exam'}
+              {loading
+                ? <><span className="spinner-border spinner-border-sm me-2"></span>Searching...</>
+                : <><i className="bi bi-search me-2"></i>Find</>}
             </button>
           </div>
+
+          {/* Suggestion dropdown */}
           {suggestions.length > 0 && (
-            <div className="list-group position-absolute w-100 shadow-sm" style={{ zIndex: 10, top: '100%' }}>
+            <div className="position-absolute w-100 shadow rounded-3 overflow-hidden"
+              style={{ zIndex: 10, top: 'calc(100% + 4px)', border: '1px solid #cce5ff' }}>
               {suggestions.map(e => (
                 <button
                   key={e.id}
                   type="button"
-                  className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                  className="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-3 py-2"
+                  style={{ transition: 'background 0.12s ease' }}
                   onMouseDown={() => handleSelectSuggestion(e)}
                 >
-                  <span>{e.title}</span>
-                  <small className="text-muted">{e.id}</small>
+                  <span className="fw-semibold small">{e.title}</span>
+                  <span className="badge rounded-pill ms-2" style={{ background: '#e3f2fd', color: '#0288d1' }}>{e.id}</span>
                 </button>
               ))}
             </div>
@@ -143,15 +162,31 @@ const StudentPortal = () => {
         </div>
       </div>
 
+      {/* Exam preview card */}
       {exam && (
-        <div className="mt-3 p-3 border rounded bg-light">
-          <h5 className="mb-1">{exam.title}</h5>
-          <p className="text-muted mb-3">
-            ID: <strong>{exam.id}</strong> &nbsp;|&nbsp; {exam.questions.length} question{exam.questions.length !== 1 ? 's' : ''}
-          </p>
-          <button className="btn btn-success" onClick={handleBegin}>
-            Confirm and Begin
-          </button>
+        <div className="w-100 mt-3 rounded-4 overflow-hidden shadow-sm exam-preview-card">
+          <div className="px-4 py-3 text-white d-flex align-items-center gap-3"
+            style={{ background: SIDEBAR_ACTIVE }}>
+            <i className="bi bi-journal-check" style={{ fontSize: '1.6rem' }}></i>
+            <div>
+              <div className="fw-bold fs-6">{exam.title}</div>
+              <small className="opacity-75">ID: {exam.id}</small>
+            </div>
+          </div>
+          <div className="px-4 py-3 bg-white d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div className="d-flex gap-3 text-muted small">
+              <span><i className="bi bi-question-circle me-1"></i><strong>{exam.questions.length}</strong> question{exam.questions.length !== 1 ? 's' : ''}</span>
+              <span><i className="bi bi-clock me-1"></i><strong>{exam.timeLimit}</strong> min</span>
+              <span><i className="bi bi-award me-1"></i>Pass at <strong>{exam.passingGrade}%</strong></span>
+            </div>
+            <button
+              className="btn text-white fw-semibold px-4"
+              onClick={handleBegin}
+              style={{ background: 'linear-gradient(135deg, #2e7d32, #43a047)', border: 'none', borderRadius: 8 }}
+            >
+              <i className="bi bi-play-circle-fill me-2"></i>Begin Exam
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -159,79 +194,167 @@ const StudentPortal = () => {
 
   // ── My results view ─────────────────────────────────────────────────────────
 
-  const renderMyResultsView = () => (
-    <div>
-      {mySubmissions.length === 0 ? (
-        <p className="text-muted">No submissions yet.</p>
-      ) : (
-        <div className="list-group">
+  const renderMyResultsView = () => {
+    if (mySubmissions.length === 0) {
+      return (
+        <div className="text-center py-5 text-muted">
+          <i className="bi bi-inbox" style={{ fontSize: '3rem', opacity: 0.35 }}></i>
+          <p className="mt-3">No submissions yet.</p>
+        </div>
+      );
+    }
+
+    // compute stats for the summary row
+    const publishedSubs = mySubmissions.filter(s => s.resultsPublished);
+    const passCount    = publishedSubs.filter(s => {
+      const e = allExams.find(ex => ex.id === s.examId);
+      return (s.grade ?? 0) >= (e?.passingGrade ?? 0);
+    }).length;
+    const failCount    = publishedSubs.length - passCount;
+    const pendingCount = mySubmissions.filter(s => !s.resultsPublished).length;
+
+    return (
+      <div>
+        {/* Stats summary */}
+        <div className="row g-3 mb-4">
+          {[
+            { label: 'Submitted', value: mySubmissions.length, icon: 'bi-send-check',    color: '#0288d1', bg: '#e3f2fd' },
+            { label: 'Passed',    value: passCount,            icon: 'bi-trophy-fill',   color: '#2e7d32', bg: '#e8f5e9' },
+            { label: 'Failed',    value: failCount,            icon: 'bi-x-circle-fill', color: '#c62828', bg: '#ffebee' },
+            { label: 'Pending',   value: pendingCount,         icon: 'bi-hourglass-split',color: '#e65100', bg: '#fff3e0' },
+          ].map(stat => (
+            <div key={stat.label} className="col-6 col-md-3">
+              <div className="rounded-3 p-3 d-flex align-items-center gap-3 shadow-sm"
+                style={{ background: stat.bg }}>
+                <i className={`bi ${stat.icon}`} style={{ fontSize: '1.6rem', color: stat.color }}></i>
+                <div>
+                  <div className="fw-bold fs-5" style={{ color: stat.color, lineHeight: 1 }}>{stat.value}</div>
+                  <small className="text-muted">{stat.label}</small>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Submission list */}
+        <div className="d-flex flex-column gap-2">
           {mySubmissions.map(sub => {
             const examData = allExams.find(e => e.id === sub.examId);
-            const passed = (sub.grade ?? 0) >= (examData?.passingGrade ?? 0);
+            const passed   = (sub.grade ?? 0) >= (examData?.passingGrade ?? 0);
+            const borderColor = !sub.resultsPublished ? '#ffc107'
+              : passed ? '#28a745' : '#dc3545';
+
             return (
-              <div key={sub.id} className="list-group-item">
-                <div className="d-flex justify-content-between align-items-start">
+              <div key={sub.id} className="rounded-3 bg-white shadow-sm overflow-hidden result-card"
+                style={{ borderLeft: `5px solid ${borderColor}` }}>
+                <div className="px-4 py-3 d-flex justify-content-between align-items-start flex-wrap gap-2">
                   <div>
                     <h6 className="mb-1 fw-semibold">{examData?.title ?? sub.examId}</h6>
                     <small className="text-muted">
+                      <i className="bi bi-calendar3 me-1"></i>
                       {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
                     </small>
                   </div>
                   {sub.resultsPublished ? (
                     <div className="text-end">
-                      <div className="fw-bold">{sub.grade ?? '—'}%</div>
+                      <div className="fw-bold fs-5" style={{ color: passed ? '#2e7d32' : '#c62828' }}>
+                        {sub.grade ?? '—'}%
+                      </div>
                       <span className={`badge ${passed ? 'bg-success' : 'bg-danger'}`}>
                         {passed ? 'Pass' : 'Fail'}
                       </span>
                     </div>
                   ) : (
-                    <span className="badge bg-warning text-dark">Pending review</span>
+                    <span className="badge bg-warning text-dark">
+                      <i className="bi bi-hourglass-split me-1"></i>Pending review
+                    </span>
                   )}
                 </div>
                 {sub.resultsPublished && sub.feedback && (
-                  <div className="mt-2 p-2 bg-light rounded border small">
-                    <span className="fw-semibold">Teacher feedback: </span>{sub.feedback}
+                  <div className="px-4 pb-3">
+                    <div className="rounded-3 p-2 small" style={{ background: '#f0f7ff', borderLeft: '3px solid #0288d1' }}>
+                      <i className="bi bi-chat-left-quote me-1 text-primary"></i>
+                      <span className="fw-semibold">Teacher feedback: </span>{sub.feedback}
+                    </div>
                   </div>
                 )}
               </div>
             );
           })}
         </div>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="container mt-4 mb-5">
-      <div className="card shadow">
-        <div className="card-header bg-dark text-white">
-          <h5 className="mb-0">Student Portal</h5>
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .exam-preview-card { animation: fadeSlideIn 0.3s ease forwards; }
+        .result-card { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+        .result-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.10) !important; }
+      `}</style>
+
+      <div className="card shadow-lg border-0 overflow-hidden">
+
+        {/* Header */}
+        <div className="card-header border-0 py-3 text-white" style={{ background: HEADER_GRADIENT }}>
+          <div className="d-flex align-items-center gap-3">
+            <div className="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center"
+              style={{ width: 46, height: 46, flexShrink: 0 }}>
+              <i className="bi bi-mortarboard-fill text-white" style={{ fontSize: '1.4rem' }}></i>
+            </div>
+            <div>
+              <h5 className="mb-0 fw-bold">Student Portal</h5>
+              {currentUser && <small className="opacity-75">Welcome back, {currentUser.name}!</small>}
+            </div>
+          </div>
         </div>
+
         <div className="d-flex" style={{ minHeight: '70vh' }}>
 
           {/* Sidebar */}
-          <div className="border-end bg-light d-flex flex-column p-3 gap-2" style={{ width: '200px', minWidth: '200px' }}>
-            <button
-              className={`btn btn-sm text-start w-100 ${view === 'findExam' ? 'btn-dark' : 'btn-outline-secondary'}`}
-              onClick={() => setView('findExam')}
-            >
-              <i className="bi bi-search me-2"></i>Find Exam
-            </button>
-            <button
-              className={`btn btn-sm text-start w-100 ${view === 'myResults' ? 'btn-dark' : 'btn-outline-secondary'}`}
-              onClick={() => setView('myResults')}
-            >
-              <i className="bi bi-bar-chart-line me-2"></i>My Results
-              {mySubmissions.length > 0 && (
-                <span className="badge bg-secondary ms-2">{mySubmissions.length}</span>
-              )}
-            </button>
+          <div className="border-end d-flex flex-column p-3 gap-2"
+            style={{ width: 200, minWidth: 200, background: '#f8fbff' }}>
+            {[
+              { id: 'findExam',  icon: 'bi-search',         label: 'Find Exam',   badge: null },
+              { id: 'myResults', icon: 'bi-bar-chart-line',  label: 'My Results',  badge: mySubmissions.length || null },
+            ].map(item => {
+              const active = view === item.id;
+              return (
+                <button
+                  key={item.id}
+                  className="btn btn-sm text-start w-100 d-flex align-items-center gap-2"
+                  style={{
+                    background: active ? SIDEBAR_ACTIVE : 'transparent',
+                    color: active ? '#fff' : '#555',
+                    border: active ? 'none' : '1px solid #dee2e6',
+                    borderRadius: 8,
+                    transition: 'all 0.15s ease',
+                    fontWeight: active ? 600 : 400,
+                  }}
+                  onClick={() => setView(item.id)}
+                >
+                  <i className={`bi ${item.icon}`}></i>
+                  <span className="flex-grow-1">{item.label}</span>
+                  {item.badge && (
+                    <span className="badge rounded-pill"
+                      style={{ background: active ? 'rgba(255,255,255,0.3)' : '#0288d1', color: '#fff', fontSize: '0.7rem' }}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Main content */}
-          <div className="flex-grow-1 p-4 overflow-auto">
+          <div className="flex-grow-1 p-4 overflow-auto" style={{ background: '#fafcff' }}>
             {view === 'myResults' ? renderMyResultsView() : renderFindExamView()}
           </div>
 

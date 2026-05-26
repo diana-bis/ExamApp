@@ -6,6 +6,9 @@ import { authService } from '../services/AuthService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
+const HEADER_GRADIENT = 'linear-gradient(135deg, #1a237e 0%, #4527a0 50%, #6a1b9a 100%)';
+const SIDEBAR_ACTIVE = 'linear-gradient(135deg, #4527a0, #6a1b9a)';
+
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [view, setView] = useState('exams'); // 'exams' | 'studentResults'
@@ -67,14 +70,32 @@ const TeacherDashboard = () => {
 
   // ── Sidebar ────────────────────────────────────────────────────────────────
 
-  const navItem = (targetView, icon, label) => (
-    <button
-      className={`btn btn-sm text-start w-100 ${view === targetView && !selectedExam ? 'btn-primary' : 'btn-outline-secondary'}`}
-      onClick={() => { setView(targetView); setSelectedExam(null); }}
-    >
-      <i className={`bi ${icon} me-2`}></i>{label}
-    </button>
-  );
+  const navItem = (targetView, icon, label, badge = null) => {
+    const active = view === targetView && !selectedExam;
+    return (
+      <button
+        className="btn btn-sm text-start w-100 d-flex align-items-center gap-2"
+        style={{
+          background: active ? SIDEBAR_ACTIVE : 'transparent',
+          color: active ? '#fff' : '#555',
+          border: active ? 'none' : '1px solid #dee2e6',
+          borderRadius: 8,
+          transition: 'all 0.15s ease',
+          fontWeight: active ? 600 : 400,
+        }}
+        onClick={() => { setView(targetView); setSelectedExam(null); }}
+      >
+        <i className={`bi ${icon}`}></i>
+        <span className="flex-grow-1">{label}</span>
+        {badge !== null && (
+          <span className="badge rounded-pill"
+            style={{ background: active ? 'rgba(255,255,255,0.25)' : '#6a1b9a', color: '#fff', fontSize: '0.7rem' }}>
+            {badge}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   // ── Detail view ────────────────────────────────────────────────────────────
   // if an exam is selected, show details screen instead of dashboard
@@ -84,37 +105,40 @@ const TeacherDashboard = () => {
     const questions = selectedExam.questions || [];
     return (
       <div>
-        <button className="btn btn-outline-secondary btn-sm mb-3" onClick={() => setSelectedExam(null)}>
-          <i className="bi bi-arrow-left me-1"></i>Back
+        <button className="btn btn-sm mb-3 d-flex align-items-center gap-1"
+          style={{ background: '#f3e5f5', color: '#4527a0', border: 'none', borderRadius: 8 }}
+          onClick={() => setSelectedExam(null)}>
+          <i className="bi bi-arrow-left"></i> Back
         </button>
-        <h5 className="fw-semibold mb-3">{selectedExam.title}</h5>
-        <div className="d-flex gap-4 mb-3 text-muted small">
+        <h5 className="fw-bold mb-1" style={{ color: '#4527a0' }}>{selectedExam.title}</h5>
+        <div className="d-flex gap-3 mb-4 text-muted small flex-wrap">
           <span><strong>ID:</strong> {selectedExam.id}</span>
-          <span><strong>Time limit:</strong> {selectedExam.timeLimit} min</span>
-          <span><strong>Passing grade:</strong> {selectedExam.passingGrade}%</span>
+          <span><i className="bi bi-clock me-1"></i>{selectedExam.timeLimit} min</span>
+          <span><i className="bi bi-award me-1"></i>Pass at {selectedExam.passingGrade}%</span>
         </div>
         {/* questions section */}
         <p className="fw-semibold mb-2">Questions ({questions.length}):</p>
-        <div className="list-group">
+        <div className="d-flex flex-column gap-2">
           {questions.map((q, index) => (
-            <div key={q.id || index} className="list-group-item">
+            <div key={q.id || index} className="rounded-3 bg-white shadow-sm p-3"
+              style={{ borderLeft: `4px solid ${q.type === 'MULTIPLE_CHOICE' ? '#6a1b9a' : '#9575cd'}` }}>
               <div className="d-flex justify-content-between align-items-start">
                 <h6 className="mb-1">Q{index + 1}: {q.text}</h6>
-                <span className={`badge ${q.type === 'MULTIPLE_CHOICE' ? 'bg-primary' : 'bg-secondary'} ms-2`}>
+                <span className="badge ms-2" style={{ background: q.type === 'MULTIPLE_CHOICE' ? SIDEBAR_ACTIVE : '#607d8b' }}>
                   {q.type === 'MULTIPLE_CHOICE' ? 'Multiple Choice' : 'Open Ended'}
                 </span>
               </div>
               {q.type === 'MULTIPLE_CHOICE' && q.options && (
-                <ul className="mb-1 mt-1">
+                <ul className="mb-0 mt-1 small">
                   {q.options.map((option, i) => (
-                    <li key={i} className={option === q.correctAnswer ? 'fw-semibold text-success' : ''}>
+                    <li key={i} className={option === q.correctAnswer ? 'fw-semibold text-success' : 'text-muted'}>
                       {option}{option === q.correctAnswer ? ' ✓' : ''}
                     </li>
                   ))}
                 </ul>
               )}
               {q.type === 'OPEN_ENDED' && (
-                <p className="mb-0 text-muted small">Manual grading required</p>
+                <p className="mb-0 text-muted small mt-1">Manual grading required</p>
               )}
             </div>
           ))}
@@ -127,22 +151,33 @@ const TeacherDashboard = () => {
 
   const renderExamsView = () => (
     <div>
+      <style>{`
+        .exam-card { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+        .exam-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(74,39,160,0.13) !important; }
+      `}</style>
       <input
         type="text"
         className="form-control mb-3"
         placeholder="Search by title or ID"
         value={searchText}
         onChange={e => setSearchText(e.target.value)}
+        style={{ background: '#f8f5ff', border: '1px solid #d1c4e9' }}
       />
       {loading ? (
-        <p className="text-muted">Loading exams...</p>
+        <div className="text-center py-5">
+          <div className="spinner-border" style={{ color: '#6a1b9a' }}></div>
+        </div>
       ) : filteredExams.length === 0 ? (
-        <p className="text-muted">No exams found.</p>
+        <div className="text-center py-5 text-muted">
+          <i className="bi bi-inbox" style={{ fontSize: '2.5rem', opacity: 0.3 }}></i>
+          <p className="mt-2">No exams found.</p>
+        </div>
       ) : (
         <div className="row g-3">
           {filteredExams.map(exam => (
             <div key={exam.id} className="col-md-6">
-              <div className="card h-100 position-relative">
+              <div className="exam-card card h-100 border-0 shadow-sm position-relative"
+                style={{ borderTop: `3px solid ${exam.status === 'published' ? '#6a1b9a' : '#b0bec5'}` }}>
                 <button
                   className="btn btn-link text-danger p-0 position-absolute"
                   style={{ top: '0.6rem', right: '0.6rem', lineHeight: 1 }}
@@ -154,31 +189,32 @@ const TeacherDashboard = () => {
                 <div className="card-body pe-5">
                   <div className="d-flex justify-content-between align-items-center mb-1">
                     <p className="text-muted small mb-0">ID: {exam.id}</p>
-                    <span className={`badge ${exam.status === 'published' ? 'bg-success' : 'bg-secondary'}`}>
-                      {exam.status === 'published' ? 'Published' : 'Draft'}
+                    <span className="badge rounded-pill"
+                      style={{ background: exam.status === 'published' ? '#e8f5e9' : '#f5f5f5', color: exam.status === 'published' ? '#2e7d32' : '#757575', border: `1px solid ${exam.status === 'published' ? '#a5d6a7' : '#e0e0e0'}` }}>
+                      {exam.status === 'published' ? '● Published' : '● Draft'}
                     </span>
                   </div>
-                  <h6 className="fw-semibold mb-2">{exam.title}</h6>
-                  <div className="d-flex gap-3 text-muted small mb-3">
+                  <h6 className="fw-bold mb-2" style={{ color: '#1a237e' }}>{exam.title}</h6>
+                  <div className="d-flex gap-3 text-muted small mb-3 flex-wrap">
                     <span>Questions: <strong>{(exam.questions || []).length}</strong></span>
                     <span>Time: <strong>{exam.timeLimit} min</strong></span>
                     <span>Pass: <strong>{exam.passingGrade}%</strong></span>
-                    <span>Submissions: <strong>{submissionCounts[exam.id] || 0}</strong></span>
                   </div>
                   <div className="d-flex flex-wrap gap-2">
                     <button
-                      className={`btn btn-sm ${exam.status === 'published' ? 'btn-success' : 'btn-outline-success'}`}
+                      className="btn btn-sm"
+                      style={{ background: exam.status === 'published' ? '#f3e5f5' : SIDEBAR_ACTIVE, color: exam.status === 'published' ? '#6a1b9a' : '#fff', border: exam.status === 'published' ? '1px solid #ce93d8' : 'none', borderRadius: 6 }}
                       onClick={() => handleToggleStatus(exam)}
                     >
                       {exam.status === 'published' ? 'Unpublish' : 'Publish'}
                     </button>
-                    <button className="btn btn-outline-info btn-sm" onClick={() => setSelectedExam(exam)}>
+                    <button className="btn btn-sm btn-outline-secondary" style={{ borderRadius: 6 }} onClick={() => setSelectedExam(exam)}>
                       View Details
                     </button>
-                    <button className="btn btn-outline-secondary btn-sm" onClick={() => navigate(`/exam/${exam.id}/scores`)}>
+                    <button className="btn btn-sm btn-outline-secondary" style={{ borderRadius: 6 }} onClick={() => navigate(`/exam/${exam.id}/scores`)}>
                       Submissions ({submissionCounts[exam.id] || 0})
                     </button>
-                    <button className="btn btn-outline-warning btn-sm" onClick={() => navigate(`/exam/edit/${exam.id}`)}>
+                    <button className="btn btn-sm btn-outline-warning" style={{ borderRadius: 6 }} onClick={() => navigate(`/exam/edit/${exam.id}`)}>
                       Edit
                     </button>
                   </div>
@@ -194,60 +230,72 @@ const TeacherDashboard = () => {
   // ── Student results view ────────────────────────────────────────────────────
 
   const renderStudentResultsView = () => {
-    if (loading) return <p className="text-muted">Loading...</p>;
-    if (allSubmissions.length === 0) return <p className="text-muted">No submissions yet.</p>;
+    if (loading) return (
+      <div className="text-center py-5">
+        <div className="spinner-border" style={{ color: '#6a1b9a' }}></div>
+      </div>
+    );
+    if (allSubmissions.length === 0) return (
+      <div className="text-center py-5 text-muted">
+        <i className="bi bi-inbox" style={{ fontSize: '2.5rem', opacity: 0.3 }}></i>
+        <p className="mt-2">No submissions yet.</p>
+      </div>
+    );
 
     return (
-      <table className="table table-bordered table-sm table-hover">
-        <thead className="table-light">
-          <tr>
-            <th>Student</th>
-            <th>Exam</th>
-            <th>Grade</th>
-            <th>Result</th>
-            <th>Published</th>
-            <th>Submitted</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {allSubmissions.map(sub => {
-            const student = users.find(u => u.id === sub.studentId);
-            const exam = exams.find(e => e.id === sub.examId);
-            const passed = exam ? (sub.grade ?? 0) >= exam.passingGrade : false;
-            return (
-              <tr key={sub.id}>
-                <td>{student ? `${student.name} (@${student.username})` : sub.studentId}</td>
-                <td>{exam ? exam.title : sub.examId}</td>
-                <td><strong>{sub.grade ?? '—'}%</strong></td>
-                <td>
-                  <span className={`badge ${passed ? 'bg-success' : 'bg-danger'}`}>
-                    {passed ? 'Pass' : 'Fail'}
-                  </span>
-                </td>
-                <td>
-                  <small className={sub.resultsPublished ? 'text-success' : 'text-warning'}>
-                    {sub.resultsPublished ? '● Published' : '● Pending'}
-                  </small>
-                </td>
-                <td className="text-muted small">
-                  {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
-                </td>
-                <td>
-                  {exam && (
-                    <button
-                      className="btn btn-outline-primary btn-sm py-0 px-2"
-                      onClick={() => navigate(`/exam/${exam.id}/scores`)}
-                    >
-                      Grade
-                    </button>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="table-responsive">
+        <table className="table table-hover align-middle" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+          <thead>
+            <tr style={{ background: '#f3e5f5' }}>
+              <th className="py-2 px-3" style={{ color: '#4527a0', borderBottom: '2px solid #ce93d8' }}>Student</th>
+              <th className="py-2 px-3" style={{ color: '#4527a0', borderBottom: '2px solid #ce93d8' }}>Exam</th>
+              <th className="py-2 px-3" style={{ color: '#4527a0', borderBottom: '2px solid #ce93d8' }}>Grade</th>
+              <th className="py-2 px-3" style={{ color: '#4527a0', borderBottom: '2px solid #ce93d8' }}>Result</th>
+              <th className="py-2 px-3" style={{ color: '#4527a0', borderBottom: '2px solid #ce93d8' }}>Published</th>
+              <th className="py-2 px-3" style={{ color: '#4527a0', borderBottom: '2px solid #ce93d8' }}>Submitted</th>
+              <th className="py-2 px-3" style={{ color: '#4527a0', borderBottom: '2px solid #ce93d8' }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {allSubmissions.map(sub => {
+              const student = users.find(u => u.id === sub.studentId);
+              const exam = exams.find(e => e.id === sub.examId);
+              const passed = exam ? (sub.grade ?? 0) >= exam.passingGrade : false;
+              return (
+                <tr key={sub.id} style={{ transition: 'background 0.12s' }}>
+                  <td className="px-3 small fw-semibold">{student ? `${student.name} (@${student.username})` : sub.studentId}</td>
+                  <td className="px-3 small">{exam ? exam.title : sub.examId}</td>
+                  <td className="px-3"><strong style={{ color: passed ? '#2e7d32' : '#c62828' }}>{sub.grade ?? '—'}%</strong></td>
+                  <td className="px-3">
+                    <span className={`badge ${passed ? 'bg-success' : 'bg-danger'}`}>
+                      {passed ? 'Pass' : 'Fail'}
+                    </span>
+                  </td>
+                  <td className="px-3">
+                    <small className={sub.resultsPublished ? 'text-success' : 'text-warning'}>
+                      {sub.resultsPublished ? '● Published' : '● Pending'}
+                    </small>
+                  </td>
+                  <td className="px-3 text-muted small">
+                    {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
+                  </td>
+                  <td className="px-3">
+                    {exam && (
+                      <button
+                        className="btn btn-sm py-0 px-2"
+                        style={{ background: SIDEBAR_ACTIVE, color: '#fff', border: 'none', borderRadius: 6 }}
+                        onClick={() => navigate(`/exam/${exam.id}/scores`)}
+                      >
+                        Grade
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     );
   };
 
@@ -255,24 +303,41 @@ const TeacherDashboard = () => {
 
   return (
     <div className="container mt-4 mb-5">
-      <div className="card shadow">
-        <div className="card-header bg-primary text-white">
-          <h5 className="mb-0">Teacher Dashboard</h5>
+      <div className="card shadow-lg border-0 overflow-hidden">
+
+        {/* Header */}
+        <div className="py-3 px-4 text-white" style={{ background: HEADER_GRADIENT }}>
+          <div className="d-flex align-items-center gap-3">
+            <div className="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center"
+              style={{ width: 46, height: 46, flexShrink: 0 }}>
+              <i className="bi bi-person-workspace text-white" style={{ fontSize: '1.4rem' }}></i>
+            </div>
+            <div>
+              <h5 className="mb-0 fw-bold">Teacher Dashboard</h5>
+              <small className="opacity-75">Manage your exams and review student results</small>
+            </div>
+          </div>
         </div>
+
         <div className="d-flex" style={{ minHeight: '70vh' }}>
 
           {/* Sidebar */}
-          <div className="border-end bg-light d-flex flex-column p-3 gap-2" style={{ width: '200px', minWidth: '200px' }}>
+          <div className="border-end d-flex flex-column p-3 gap-2"
+            style={{ width: 200, minWidth: 200, background: '#faf5ff' }}>
             {navItem('exams', 'bi-journal-text', 'Exams')}
-            {navItem('studentResults', 'bi-people', 'Student Results')}
+            {navItem('studentResults', 'bi-people', 'Student Results', allSubmissions.length || null)}
             <hr className="my-1" />
-            <button className="btn btn-success btn-sm text-start" onClick={() => navigate('/exam/new')}>
+            <button
+              className="btn btn-sm text-start text-white fw-semibold"
+              style={{ background: 'linear-gradient(135deg, #2e7d32, #43a047)', border: 'none', borderRadius: 8 }}
+              onClick={() => navigate('/exam/new')}
+            >
               <i className="bi bi-plus-lg me-2"></i>New Exam
             </button>
           </div>
 
           {/* Main content */}
-          <div className="flex-grow-1 p-4 overflow-auto">
+          <div className="flex-grow-1 p-4 overflow-auto" style={{ background: '#fdfaff' }}>
             {selectedExam
               ? renderDetailView()
               : view === 'studentResults'
