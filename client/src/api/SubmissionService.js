@@ -62,6 +62,16 @@ class SubmissionService extends BaseApiService {
         return res.json();
     }
 
+    // get all submissions (used by teacher dashboard for submission counts)
+    async getAllSubmissions() {
+        await this.simulateDelay(400);
+        if (configService.isMockMode()) {
+            return mockDb.getSubmissions();
+        }
+        const res = await fetch(`${configService.getApiBaseUrl()}/submissions`);
+        return res.json();
+    }
+
     // update submission by id with new data (used when teacher grades a submission)
     async updateSubmission(id, data) {
         await this.simulateDelay(400);

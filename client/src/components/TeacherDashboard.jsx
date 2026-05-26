@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { examService } from '../api/ExamService';
+import { submissionService } from '../api/SubmissionService';
 import { notifyService } from '../services/NotifyService';
 import { loggerService } from '../services/LoggerService';
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
+  const [submissionCounts, setSubmissionCounts] = useState({});
   const [loading, setLoading] = useState(true);
   // currently selected exam for details screen
   // null = dashboard mode
@@ -19,12 +21,17 @@ const TeacherDashboard = () => {
     return (exam.title || '').toLowerCase().includes(s) || (exam.id || '').toLowerCase().includes(s);
   });
 
-  // runs once when component mounts, loads all exams from service
+  // runs once when component mounts, loads all exams and submission counts
   useEffect(() => {
-    examService.getAllExams()
-      // on success, save exams to state and turn off loading
-      .then(data => { setExams(data); setLoading(false); })
-      .catch(err => { loggerService.error('TeacherDashboard › getAllExams():', err); setLoading(false); });
+    Promise.all([examService.getAllExams(), submissionService.getAllSubmissions()])
+      .then(([examsData, allSubs]) => {
+        setExams(examsData);
+        const counts = {};
+        allSubs.forEach(s => { counts[s.examId] = (counts[s.examId] || 0) + 1; });
+        setSubmissionCounts(counts);
+        setLoading(false);
+      })
+      .catch(err => { loggerService.error('TeacherDashboard › load:', err); setLoading(false); });
   }, []);
 
   // toggle exam status between 'draft' and 'published' 
@@ -129,8 +136,16 @@ const TeacherDashboard = () => {
             <div className="row g-3">
               {filteredExams.map(exam => (
                 <div key={exam.id} className="col-md-6">
-                  <div className="card h-100">
-                    <div className="card-body">
+                  <div className="card h-100 position-relative">
+                    <button
+                      className="btn btn-link text-danger p-0 position-absolute"
+                      style={{ top: '0.6rem', right: '0.6rem', lineHeight: 1 }}
+                      title="Delete exam"
+                      onClick={() => handleDelete(exam)}
+                    >
+                      <i className="bi bi-trash3" style={{ fontSize: '1.1rem' }}></i>
+                    </button>
+                    <div className="card-body pe-5">
                       <div className="d-flex justify-content-between align-items-center mb-1">
                         <p className="text-muted small mb-0">ID: {exam.id}</p>
                         <span className={`badge ${exam.status === 'published' ? 'bg-success' : 'bg-secondary'}`}>
@@ -142,6 +157,7 @@ const TeacherDashboard = () => {
                         <span>Questions: <strong>{(exam.questions || []).length}</strong></span>
                         <span>Time: <strong>{exam.timeLimit} min</strong></span>
                         <span>Pass: <strong>{exam.passingGrade}%</strong></span>
+                        <span>Submissions: <strong>{submissionCounts[exam.id] || 0}</strong></span>
                       </div>
                       <div className="d-flex flex-wrap gap-2">
                         <button
@@ -158,9 +174,6 @@ const TeacherDashboard = () => {
                         </button>
                         <button className="btn btn-outline-warning btn-sm" onClick={() => navigate(`/exam/edit/${exam.id}`)}>
                           Edit
-                        </button>
-                        <button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(exam)}>
-                          Delete
                         </button>
                       </div>
                     </div>
