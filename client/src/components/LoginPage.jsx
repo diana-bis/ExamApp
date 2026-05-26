@@ -116,7 +116,7 @@ const LoginPage = ({ onLogin }) => {
                                     onClick={() => setShowPassword((value) => !value)}
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
-                                    {showPassword ? '🙈' : '👁️'}
+                                    <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
                                 </button>
                             </div>
                             {invalidField === 'password' && (

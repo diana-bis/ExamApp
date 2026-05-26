@@ -133,7 +133,7 @@ const RegisterPage = () => {
                                     onClick={() => setShowPassword(v => !v)}
                                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
-                                    {showPassword ? '🙈' : '👁️'}
+                                    <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
                                 </button>
                             </div>
                             {errors.password && <div className="invalid-feedback d-block">{errors.password}</div>}
@@ -158,7 +158,7 @@ const RegisterPage = () => {
                                     onClick={() => setShowConfirmPassword(v => !v)}
                                     aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                                 >
-                                    {showConfirmPassword ? '🙈' : '👁️'}
+                                    <i className={`bi ${showConfirmPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
                                 </button>
                             </div>
                             {errors.confirmPassword && <div className="invalid-feedback d-block">{errors.confirmPassword}</div>}
