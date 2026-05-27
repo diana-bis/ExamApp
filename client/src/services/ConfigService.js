@@ -4,18 +4,27 @@ class ConfigService {
         return 'E-Test System';
     }
 
+    /*
+     * Base URL for all API fetch calls (server mode only).
+     * Reads VITE_API_BASE_URL from client/.env.local
+     * Defaults to http://localhost:3001/api if the variable is not set.
+     */
     getApiBaseUrl() {
-        return '/api';
+        return import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
     }
 
     /*
      * Controls whether the API layer uses the in-memory mockDb or real HTTP calls.
-     * true  → mockDb, simulated delays.
+     * true  → mockDb, simulated delays (default — safe when env var is absent).
      * false → real backend mode. Services switch to real fetch() HTTP requests using getApiBaseUrl().
-     * Flip this to false once a real backend is connected.
+     *
+     * To switch to server mode:
+     *   1. Open client/.env.local
+     *   2. Set VITE_MOCK_MODE=false
+     *   3. Restart the client dev server (npm run dev)
      */
     isMockMode() {
-        return true;
+        return import.meta.env.VITE_MOCK_MODE !== 'false';
     }
 }
 
