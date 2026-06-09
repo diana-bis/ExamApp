@@ -25,6 +25,8 @@ const StudentPortal = () => {
   // student's past submissions
   const [mySubmissions, setMySubmissions] = useState([]);
   const [allExams, setAllExams] = useState([]);
+  // existing submission for the currently previewed exam (null = not attempted yet)
+  const [existingSubmission, setExistingSubmission] = useState(null);
 
   // Runs once when component mounts
   useEffect(() => {
@@ -63,6 +65,9 @@ const StudentPortal = () => {
       loggerService.log(`Exam found — title: "${data.title}", questions: ${data.questions.length}`);
       notifyService.notifySuccess(`Exam "${data.title}" loaded successfully.`);
       setExam(data);
+      // check if student has already attempted this exam
+      const sub = await submissionService.getSubmissionByStudentAndExam(currentUser?.id, data.id);
+      setExistingSubmission(sub);
     } catch (err) {
       loggerService.error('Exam fetch failed:', err.message);
       notifyService.notifyError(`Exam not found: "${id}". Check the ID and try again.`);
@@ -97,11 +102,13 @@ const StudentPortal = () => {
     : [];
 
   // select a suggestion — set the exam directly without an extra fetch
-  const handleSelectSuggestion = (selected) => {
+  const handleSelectSuggestion = async (selected) => {
     setExamId(selected.id);
     setExam(selected);
     notifyService.notifySuccess(`Exam "${selected.title}" loaded successfully.`);
     loggerService.log(`Exam found — title: "${selected.title}", questions: ${selected.questions.length}`);
+    const sub = await submissionService.getSubmissionByStudentAndExam(currentUser?.id, selected.id);
+    setExistingSubmission(sub);
   };
 
   const renderFindExamView = () => (
@@ -124,7 +131,7 @@ const StudentPortal = () => {
               style={{ boxShadow: 'none', borderRadius: '10px 0 0 10px', background: '#f0f7ff' }}
               placeholder="Search by title or ID"
               value={examId}
-              onChange={(e) => { setExamId(e.target.value); setExam(null); }}
+              onChange={(e) => { setExamId(e.target.value); setExam(null); setExistingSubmission(null); }}
               onKeyDown={handleKeyDown}
               autoFocus
             />
@@ -179,13 +186,27 @@ const StudentPortal = () => {
               <span><i className="bi bi-clock me-1"></i><strong>{exam.timeLimit}</strong> min</span>
               <span><i className="bi bi-award me-1"></i>Pass at <strong>{exam.passingGrade}%</strong></span>
             </div>
-            <button
-              className="btn text-white fw-semibold px-4"
-              onClick={handleBegin}
-              style={{ background: 'linear-gradient(135deg, #2e7d32, #43a047)', border: 'none', borderRadius: 8 }}
-            >
-              <i className="bi bi-play-circle-fill me-2"></i>Begin Exam
-            </button>
+            {existingSubmission && !existingSubmission.reopened ? (
+              <span className="badge bg-secondary px-3 py-2" style={{ fontSize: '0.85rem', borderRadius: 8 }}>
+                <i className="bi bi-lock-fill me-2"></i>Already attempted
+              </span>
+            ) : existingSubmission?.reopened ? (
+              <button
+                className="btn text-white fw-semibold px-4"
+                onClick={handleBegin}
+                style={{ background: 'linear-gradient(135deg, #e65100, #ff6d00)', border: 'none', borderRadius: 8 }}
+              >
+                <i className="bi bi-arrow-repeat me-2"></i>Re-take Exam
+              </button>
+            ) : (
+              <button
+                className="btn text-white fw-semibold px-4"
+                onClick={handleBegin}
+                style={{ background: 'linear-gradient(135deg, #2e7d32, #43a047)', border: 'none', borderRadius: 8 }}
+              >
+                <i className="bi bi-play-circle-fill me-2"></i>Begin Exam
+              </button>
+            )}
           </div>
         </div>
       )}

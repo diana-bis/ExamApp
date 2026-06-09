@@ -107,6 +107,15 @@ const ExamScoresPage = () => {
         setFeedbackInput(sub.feedback ?? '');
     };
 
+    // Re-open exam for one student so they can retake it
+    const handleReopen = async (sub) => {
+        await submissionService.updateSubmission(sub.id, { reopened: true });
+        setSubmissions(prev => prev.map(s => s.id === sub.id ? { ...s, reopened: true } : s));
+        const student = users.find(u => u.id === sub.studentId);
+        notifyService.notifySuccess(`Exam re-opened for ${student?.name ?? sub.studentId}.`);
+        loggerService.log('ExamScoresPage › re-opened submission:', sub.id);
+    };
+
     // Publish/unpublish results to student
     const handlePublish = async (sub) => {
         const resultsPublished = !sub.resultsPublished;
@@ -266,6 +275,14 @@ const ExamScoresPage = () => {
                                                         <small className={sub.resultsPublished ? 'text-success' : 'text-warning'}>
                                                             {sub.resultsPublished ? '● Published' : '● Pending'}
                                                         </small>
+                                                        {sub.reopened && (
+                                                            <>
+                                                                <br />
+                                                                <small className="text-info">
+                                                                    <i className="bi bi-arrow-repeat me-1"></i>Re-opened
+                                                                </small>
+                                                            </>
+                                                        )}
                                                     </td>
                                                     <td className="px-3 text-muted small">
                                                         {sub.submittedAt ? new Date(sub.submittedAt).toLocaleString() : '—'}
@@ -297,6 +314,15 @@ const ExamScoresPage = () => {
                                                                 onClick={() => handlePublish(sub)}
                                                             >
                                                                 {sub.resultsPublished ? 'Unpublish' : 'Publish'}
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-sm btn-outline-warning"
+                                                                style={{ borderRadius: 6 }}
+                                                                disabled={sub.reopened}
+                                                                onClick={() => handleReopen(sub)}
+                                                            >
+                                                                <i className="bi bi-arrow-repeat me-1"></i>
+                                                                {sub.reopened ? 'Re-opened' : 'Re-open'}
                                                             </button>
                                                         </div>
                                                     </td>

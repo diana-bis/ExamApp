@@ -48,6 +48,8 @@ const TakeExam = () => {
     const [result, setResult] = useState(null);
     // time left in seconds for countdown timer
     const [timeLeft, setTimeLeft] = useState(null);
+    // existing submission for this student+exam (set when reopened, null otherwise)
+    const [existingSubmission, setExistingSubmission] = useState(null);
 
     // answersRef stores latest answers
     const answersRef = useRef({});
@@ -60,9 +62,18 @@ const TakeExam = () => {
     // Load exam details when page opens
     useEffect(() => {
         loggerService.log(`TakeExam: loading exam "${examId}"`);
-        examService.getExamById(examId)
-            .then(data => {
-                // store exam
+        Promise.all([
+            examService.getExamById(examId),
+            submissionService.getSubmissionByStudentAndExam(currentUser?.id, examId),
+        ])
+            .then(([data, sub]) => {
+                // block access if student already submitted and teacher hasn't re-opened
+                if (sub && !sub.reopened) {
+                    notifyService.notifyError('You have already submitted this exam.');
+                    navigate('/student');
+                    return;
+                }
+                setExistingSubmission(sub ?? null);
                 setExam(data);
                 loggerService.log(`TakeExam: exam loaded — "${data.title}"`);
             })
@@ -130,13 +141,21 @@ const TakeExam = () => {
 
             // detect open-ended questions - if any exist, results cannot be published until teacher reviews them, set resultsPublished to false
             const hasOE = exam.questions.some(q => q.type === 'OPEN_ENDED');
-            await submissionService.submitExam({
+            const payload = {
                 studentId: currentUser?.id,
                 examId,
                 answers: currentAnswers,
                 grade,
                 resultsPublished: !hasOE,
-            });
+                reopened: false,
+                submittedAt: new Date().toISOString(),
+            };
+            if (existingSubmission?.reopened) {
+                // retake: overwrite the existing submission
+                await submissionService.updateSubmission(existingSubmission.id, payload);
+            } else {
+                await submissionService.submitExam(payload);
+            }
 
             loggerService.log(`TakeExam: submission complete — grade ${grade}%`);
             notifyService.notifySuccess(`Submitted! You scored ${mcCorrect}/${mcTotal} (${grade}%).`);

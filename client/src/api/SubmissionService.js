@@ -72,6 +72,17 @@ class SubmissionService extends BaseApiService {
         return res.json();
     }
 
+    // get the single submission for a specific student+exam pair (returns null if none)
+    async getSubmissionByStudentAndExam(studentId, examId) {
+        await this.simulateDelay(400);
+        if (configService.isMockMode()) {
+            return mockDb.getSubmissions().find(s => s.studentId === studentId && s.examId === examId) ?? null;
+        }
+        const res = await fetch(`${configService.getApiBaseUrl()}/submissions?studentId=${studentId}&examId=${examId}`);
+        const results = await res.json();
+        return results[0] ?? null;
+    }
+
     // update submission by id with new data (used when teacher grades a submission)
     async updateSubmission(id, data) {
         await this.simulateDelay(400);
