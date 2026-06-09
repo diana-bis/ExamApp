@@ -195,11 +195,17 @@ const TeacherDashboard = () => {
                     </span>
                   </div>
                   <h6 className="fw-bold mb-2" style={{ color: '#1a237e' }}>{exam.title}</h6>
-                  <div className="d-flex gap-3 text-muted small mb-3 flex-wrap">
+                  <div className="d-flex gap-3 text-muted small mb-2 flex-wrap">
                     <span>Questions: <strong>{(exam.questions || []).length}</strong></span>
                     <span>Time: <strong>{exam.timeLimit} min</strong></span>
                     <span>Pass: <strong>{exam.passingGrade}%</strong></span>
                   </div>
+                  {(exam.availableFrom || exam.availableTo) && (
+                    <div className="d-flex gap-3 text-muted small mb-3 flex-wrap">
+                      {exam.availableFrom && <span><i className="bi bi-calendar-check me-1 text-success"></i>Opens: <strong>{new Date(exam.availableFrom).toLocaleString()}</strong></span>}
+                      {exam.availableTo   && <span><i className="bi bi-calendar-x me-1 text-danger"></i>Closes: <strong>{new Date(exam.availableTo).toLocaleString()}</strong></span>}
+                    </div>
+                  )}
                   <div className="d-flex flex-wrap gap-2">
                     <button
                       className="btn btn-sm"

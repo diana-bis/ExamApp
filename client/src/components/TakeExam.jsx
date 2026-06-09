@@ -9,6 +9,13 @@ import ExamForm from './ExamForm';
 
 const HEADER_GRADIENT = 'linear-gradient(135deg, #1a237e 0%, #0288d1 60%, #00bcd4 100%)';
 
+const getAvailabilityStatus = (exam) => {
+    const now = new Date();
+    if (exam.availableFrom && new Date(exam.availableFrom) > now) return 'not_yet';
+    if (exam.availableTo   && new Date(exam.availableTo)   < now) return 'closed';
+    return 'open';
+};
+
 // Convert seconds into MM:SS format
 const formatTime = (secs) => {
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
@@ -67,6 +74,18 @@ const TakeExam = () => {
             submissionService.getSubmissionByStudentAndExam(currentUser?.id, examId),
         ])
             .then(([data, sub]) => {
+                // block access outside availability window
+                const avail = getAvailabilityStatus(data);
+                if (avail === 'not_yet') {
+                    notifyService.notifyError('This exam is not available yet.');
+                    navigate('/student');
+                    return;
+                }
+                if (avail === 'closed') {
+                    notifyService.notifyError('This exam has closed and is no longer accepting submissions.');
+                    navigate('/student');
+                    return;
+                }
                 // block access if student already submitted and teacher hasn't re-opened
                 if (sub && !sub.reopened) {
                     notifyService.notifyError('You have already submitted this exam.');

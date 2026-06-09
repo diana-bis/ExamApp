@@ -127,6 +127,36 @@ const EditExamPage = () => {
                         </div>
                     </div>
 
+                    {/* Availability Window */}
+                    <div className="mb-4 rounded-3 p-3" style={{ background: '#f3e5f5', border: '1px solid #d1c4e9' }}>
+                        <h6 className="fw-semibold mb-3" style={{ color: '#4527a0' }}>
+                            <i className="bi bi-calendar-range me-2"></i>Availability Window <span className="fw-normal text-muted">(optional)</span>
+                        </h6>
+                        <div className="row g-3">
+                            <div className="col-md-6">
+                                <label className="form-label fw-semibold small" style={{ color: '#4527a0' }}>Opens at</label>
+                                <input
+                                    type="datetime-local"
+                                    className="form-control"
+                                    value={form.availableFrom || ''}
+                                    onChange={e => setField('availableFrom', e.target.value || null)}
+                                    style={{ background: '#f8f5ff', border: '1px solid #d1c4e9' }}
+                                />
+                            </div>
+                            <div className="col-md-6">
+                                <label className="form-label fw-semibold small" style={{ color: '#4527a0' }}>Closes at</label>
+                                <input
+                                    type="datetime-local"
+                                    className="form-control"
+                                    value={form.availableTo || ''}
+                                    onChange={e => setField('availableTo', e.target.value || null)}
+                                    style={{ background: '#f8f5ff', border: '1px solid #d1c4e9' }}
+                                />
+                            </div>
+                        </div>
+                        <p className="text-muted small mt-2 mb-0">Leave blank for no time restriction.</p>
+                    </div>
+
                     {/* Questions header */}
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <h6 className="fw-bold mb-0" style={{ color: '#4527a0' }}>

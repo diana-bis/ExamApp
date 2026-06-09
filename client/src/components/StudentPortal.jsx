@@ -9,6 +9,16 @@ import { notifyService } from '../services/NotifyService';
 const HEADER_GRADIENT = 'linear-gradient(135deg, #1a237e 0%, #0288d1 60%, #00bcd4 100%)';
 const SIDEBAR_ACTIVE   = 'linear-gradient(135deg, #0288d1, #00bcd4)';
 
+// Returns 'not_yet' | 'closed' | 'open'
+const getAvailabilityStatus = (exam) => {
+    const now = new Date();
+    if (exam.availableFrom && new Date(exam.availableFrom) > now) return 'not_yet';
+    if (exam.availableTo   && new Date(exam.availableTo)   < now) return 'closed';
+    return 'open';
+};
+
+const fmtDate = (val) => val ? new Date(val).toLocaleString() : '';
+
 const StudentPortal = () => {
   const navigate = useNavigate();
   // currently logged-in user
@@ -180,33 +190,45 @@ const StudentPortal = () => {
               <small className="opacity-75">ID: {exam.id}</small>
             </div>
           </div>
-          <div className="px-4 py-3 bg-white d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <div className="d-flex gap-3 text-muted small">
+          <div className="px-4 py-3 bg-white" style={{ borderTop: '1px solid #e3f2fd' }}>
+            <div className="d-flex gap-3 text-muted small mb-3 flex-wrap">
               <span><i className="bi bi-question-circle me-1"></i><strong>{exam.questions.length}</strong> question{exam.questions.length !== 1 ? 's' : ''}</span>
               <span><i className="bi bi-clock me-1"></i><strong>{exam.timeLimit}</strong> min</span>
               <span><i className="bi bi-award me-1"></i>Pass at <strong>{exam.passingGrade}%</strong></span>
+              {exam.availableFrom && <span><i className="bi bi-calendar-check me-1"></i>Opens <strong>{fmtDate(exam.availableFrom)}</strong></span>}
+              {exam.availableTo   && <span><i className="bi bi-calendar-x me-1"></i>Closes <strong>{fmtDate(exam.availableTo)}</strong></span>}
             </div>
-            {existingSubmission && !existingSubmission.reopened ? (
-              <span className="badge bg-secondary px-3 py-2" style={{ fontSize: '0.85rem', borderRadius: 8 }}>
-                <i className="bi bi-lock-fill me-2"></i>Already attempted
-              </span>
-            ) : existingSubmission?.reopened ? (
-              <button
-                className="btn text-white fw-semibold px-4"
-                onClick={handleBegin}
-                style={{ background: 'linear-gradient(135deg, #e65100, #ff6d00)', border: 'none', borderRadius: 8 }}
-              >
-                <i className="bi bi-arrow-repeat me-2"></i>Re-take Exam
-              </button>
-            ) : (
-              <button
-                className="btn text-white fw-semibold px-4"
-                onClick={handleBegin}
-                style={{ background: 'linear-gradient(135deg, #2e7d32, #43a047)', border: 'none', borderRadius: 8 }}
-              >
-                <i className="bi bi-play-circle-fill me-2"></i>Begin Exam
-              </button>
-            )}
+            {(() => {
+              const avail = getAvailabilityStatus(exam);
+              if (avail === 'not_yet') return (
+                <span className="badge px-3 py-2" style={{ fontSize: '0.85rem', borderRadius: 8, background: '#e3f2fd', color: '#0288d1' }}>
+                  <i className="bi bi-hourglass-split me-2"></i>Opens {fmtDate(exam.availableFrom)}
+                </span>
+              );
+              if (avail === 'closed') return (
+                <span className="badge px-3 py-2" style={{ fontSize: '0.85rem', borderRadius: 8, background: '#ffebee', color: '#c62828' }}>
+                  <i className="bi bi-calendar-x me-2"></i>Closed {fmtDate(exam.availableTo)}
+                </span>
+              );
+              // open — check submission state
+              if (existingSubmission && !existingSubmission.reopened) return (
+                <span className="badge bg-secondary px-3 py-2" style={{ fontSize: '0.85rem', borderRadius: 8 }}>
+                  <i className="bi bi-lock-fill me-2"></i>Already attempted
+                </span>
+              );
+              if (existingSubmission?.reopened) return (
+                <button className="btn text-white fw-semibold px-4" onClick={handleBegin}
+                  style={{ background: 'linear-gradient(135deg, #e65100, #ff6d00)', border: 'none', borderRadius: 8 }}>
+                  <i className="bi bi-arrow-repeat me-2"></i>Re-take Exam
+                </button>
+              );
+              return (
+                <button className="btn text-white fw-semibold px-4" onClick={handleBegin}
+                  style={{ background: 'linear-gradient(135deg, #2e7d32, #43a047)', border: 'none', borderRadius: 8 }}>
+                  <i className="bi bi-play-circle-fill me-2"></i>Begin Exam
+                </button>
+              );
+            })()}
           </div>
         </div>
       )}

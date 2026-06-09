@@ -14,6 +14,12 @@ export const validateExamForm = (form) => {
         notifyService.notifyError('Passing grade must be between 0 and 100.');
         return false;
     }
+    if (form.availableFrom && form.availableTo) {
+        if (new Date(form.availableFrom) >= new Date(form.availableTo)) {
+            notifyService.notifyError('Start date must be before end date.');
+            return false;
+        }
+    }
     for (const q of form.questions) {
         if (!q.text.trim()) {
             notifyService.notifyError('All questions must have text.');
