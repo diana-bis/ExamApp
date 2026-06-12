@@ -19,11 +19,9 @@ import { configService } from '../services/ConfigService';
 export class ExamService extends BaseApiService {
   // get all exams (for teacher dashboard and student portal)
   async getAllExams() {
-    // simulate fake network delay if in mock mode
-    await this.simulateDelay(800);
-
     // MOCK MODE — return exams from mockDb instead of making real API call
     if (configService.isMockMode()) {
+      await this.simulateDelay(800);
       return mockDb.data.exams.map(e => ({ ...e }));
     }
 
@@ -37,11 +35,9 @@ export class ExamService extends BaseApiService {
 
   // get one exam by id (used when student starts an exam or teacher views details)
   async getExamById(id) {
-    // simulate fake network delay if in mock mode
-    await this.simulateDelay(500);
-
     // MOCK MODE — find exam in mockDb instead of making real API call
     if (configService.isMockMode()) {
+      await this.simulateDelay(500);
       const exam = mockDb.findExam(id);
 
       // if exam found, return copy
@@ -59,11 +55,9 @@ export class ExamService extends BaseApiService {
 
   // create new exam (used by teacher when creating an exam)
   async createExam(exam) {
-    // simulate fake network delay if in mock mode
-    await this.simulateDelay(1000);
-
     // MOCK MODE — add exam to mockDb instead of making real API call
     if (configService.isMockMode()) {
+      await this.simulateDelay(1000);
       // generate new exam ID by finding max existing ID and adding 1
       const maxNum = (mockDb.data.exams ?? [])
         .map(e => parseInt(e.id.replace('EX', ''), 10))
@@ -88,11 +82,9 @@ export class ExamService extends BaseApiService {
 
   // update existing exam by id (used by teacher when editing an exam or toggling status)
   async updateExam(id, data) {
-    // simulate fake network delay if in mock mode
-    await this.simulateDelay(800);
-
     // MOCK MODE — update exam in mockDb instead of making real API call
     if (configService.isMockMode()) {
+      await this.simulateDelay(800);
       // update exam in mockDb and return updated exam
       const updated = mockDb.updateExam(id, data);
 
@@ -114,11 +106,9 @@ export class ExamService extends BaseApiService {
 
   // delete exam by id (used by teacher when deleting an exam)
   async deleteExam(id) {
-    // simulate fake network delay if in mock mode
-    await this.simulateDelay(600);
-
     // MOCK MODE — delete exam from mockDb instead of making real API call
     if (configService.isMockMode()) {
+      await this.simulateDelay(600);
       mockDb.deleteExam(id);
       return;
     }
