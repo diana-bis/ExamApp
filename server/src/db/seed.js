@@ -17,7 +17,8 @@ const CREATE_TABLES = `
     status        TEXT NOT NULL DEFAULT 'draft',
     time_limit    INT,
     passing_grade INT,
-    questions     JSONB NOT NULL DEFAULT '[]'
+    questions     JSONB NOT NULL DEFAULT '[]',
+    deadline      TIMESTAMPTZ
   );
 
   CREATE TABLE IF NOT EXISTS submissions (
@@ -106,6 +107,7 @@ async function seed() {
 
     console.log('Creating tables...');
     await client.query(CREATE_TABLES);
+    await client.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS deadline TIMESTAMPTZ`);
 
     console.log('Seeding users...');
     for (const u of SEED_USERS) {
