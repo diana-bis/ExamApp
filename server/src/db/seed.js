@@ -27,6 +27,7 @@ const CREATE_TABLES = `
     exam_id            TEXT NOT NULL,
     answers            JSONB NOT NULL DEFAULT '{}',
     grade              INT,
+    feedback           TEXT,
     results_published  BOOLEAN NOT NULL DEFAULT TRUE,
     submitted_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
@@ -108,6 +109,7 @@ async function seed() {
     console.log('Creating tables...');
     await client.query(CREATE_TABLES);
     await client.query(`ALTER TABLE exams ADD COLUMN IF NOT EXISTS deadline TIMESTAMPTZ`);
+    await client.query(`ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback TEXT`);
 
     console.log('Seeding users...');
     for (const u of SEED_USERS) {

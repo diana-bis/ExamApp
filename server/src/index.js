@@ -140,6 +140,7 @@ function rowToSubmission(row) {
     examId: row.exam_id,
     answers: row.answers,
     grade: row.grade,
+    feedback: row.feedback ?? null,
     resultsPublished: row.results_published,
     submittedAt: row.submitted_at,
   };
@@ -177,17 +178,19 @@ app.put('/api/submissions/:id', async (req, res) => {
   if (existing.length === 0) return res.status(404).json({ error: 'Submission not found' });
 
   const current = existing[0];
-  const { grade, resultsPublished, answers } = req.body;
+  const { grade, resultsPublished, answers, feedback } = req.body;
   const { rows } = await pool.query(
     `UPDATE submissions SET
        grade             = $1,
        results_published = $2,
-       answers           = $3
-     WHERE id = $4 RETURNING *`,
+       answers           = $3,
+       feedback          = $4
+     WHERE id = $5 RETURNING *`,
     [
       grade             !== undefined ? grade             : current.grade,
       resultsPublished  !== undefined ? resultsPublished  : current.results_published,
       JSON.stringify(answers !== undefined ? answers : current.answers),
+      feedback          !== undefined ? feedback          : current.feedback,
       req.params.id,
     ]
   );
