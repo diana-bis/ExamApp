@@ -25,6 +25,13 @@ const StudentPortal = () => {
   const currentUser = authService.getCurrentUser();
 
   const [view, setView] = useState('findExam'); // 'findExam' | 'myResults'
+  const [expandedSubs, setExpandedSubs] = useState(new Set());
+
+  const toggleExpanded = (id) => setExpandedSubs(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
 
   // exam ID typed by student
   const [examId, setExamId] = useState('');
@@ -313,12 +320,83 @@ const StudentPortal = () => {
                     </span>
                   )}
                 </div>
+
+                {/* Feedback */}
                 {sub.resultsPublished && sub.feedback && (
-                  <div className="px-4 pb-3">
+                  <div className="px-4 pb-2">
                     <div className="rounded-3 p-2 small" style={{ background: '#f0f7ff', borderLeft: '3px solid #0288d1' }}>
                       <i className="bi bi-chat-left-quote me-1 text-primary"></i>
                       <span className="fw-semibold">Teacher feedback: </span>{sub.feedback}
                     </div>
+                  </div>
+                )}
+
+                {/* View Details toggle — only when results published and exam data available */}
+                {sub.resultsPublished && examData && (
+                  <div className="px-4 pb-3">
+                    <button
+                      className="btn btn-sm d-flex align-items-center gap-1"
+                      style={{ color: '#0288d1', background: 'none', border: 'none', padding: 0, fontSize: '0.82rem' }}
+                      onClick={() => toggleExpanded(sub.id)}
+                    >
+                      <i className={`bi ${expandedSubs.has(sub.id) ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+                      {expandedSubs.has(sub.id) ? 'Hide breakdown' : 'View question breakdown'}
+                    </button>
+
+                    {expandedSubs.has(sub.id) && (
+                      <div className="mt-2 d-flex flex-column gap-2">
+                        {examData.questions.map((q, idx) => {
+                          const studentAnswer = sub.answers?.[q.id];
+                          const isCorrect = q.type === 'MULTIPLE_CHOICE' && studentAnswer === q.correctAnswer;
+                          const isWrong   = q.type === 'MULTIPLE_CHOICE' && studentAnswer !== q.correctAnswer;
+
+                          return (
+                            <div key={q.id} className="rounded-3 p-3 small"
+                              style={{
+                                background: q.type === 'MULTIPLE_CHOICE'
+                                  ? (isCorrect ? '#f0fdf4' : '#fff5f5')
+                                  : '#f8f9fa',
+                                border: `1px solid ${q.type === 'MULTIPLE_CHOICE' ? (isCorrect ? '#bbf7d0' : '#fecaca') : '#dee2e6'}`
+                              }}>
+                              <div className="d-flex align-items-start gap-2 mb-2">
+                                {q.type === 'MULTIPLE_CHOICE' && (
+                                  <i className={`bi ${isCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'} mt-1`}
+                                    style={{ color: isCorrect ? '#16a34a' : '#dc2626', flexShrink: 0 }}></i>
+                                )}
+                                {q.type === 'OPEN_ENDED' && (
+                                  <i className="bi bi-pencil-square mt-1 text-muted" style={{ flexShrink: 0 }}></i>
+                                )}
+                                <span className="fw-semibold text-dark">Q{idx + 1}. {q.text}</span>
+                              </div>
+
+                              {q.type === 'MULTIPLE_CHOICE' && (
+                                <div className="d-flex flex-column gap-1 ms-4">
+                                  <div>
+                                    <span className="text-muted me-1">Your answer:</span>
+                                    <span className="fw-semibold" style={{ color: isCorrect ? '#16a34a' : '#dc2626' }}>
+                                      {studentAnswer ?? <em className="text-muted">No answer</em>}
+                                    </span>
+                                  </div>
+                                  {isWrong && (
+                                    <div>
+                                      <span className="text-muted me-1">Correct answer:</span>
+                                      <span className="fw-semibold" style={{ color: '#16a34a' }}>{q.correctAnswer}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {q.type === 'OPEN_ENDED' && (
+                                <div className="ms-4">
+                                  <span className="text-muted me-1">Your answer:</span>
+                                  <span>{studentAnswer ?? <em className="text-muted">No answer</em>}</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

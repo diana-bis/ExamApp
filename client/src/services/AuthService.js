@@ -36,9 +36,14 @@ class AuthService {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
         });
-        const user = await res.json();
-        storageService.saveItem(USER_KEY, user);
-        return user;
+        const data = await res.json();
+        if (!res.ok) {
+            const error = new Error(data.error || 'Login failed');
+            error.field = data.field || '';
+            throw error;
+        }
+        storageService.saveItem(USER_KEY, data);
+        return data;
     }
 
     async register({ name, username, password, role }) {
@@ -59,8 +64,13 @@ class AuthService {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, username, password, role }),
         });
-        // return newly created user from backend
-        return res.json();
+        const data = await res.json();
+        if (!res.ok) {
+            const error = new Error(data.error || 'Registration failed');
+            error.field = data.field || '';
+            throw error;
+        }
+        return data;
     }
 
     // logs out the user by removing their info from localStorage
